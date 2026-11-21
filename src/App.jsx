@@ -8,6 +8,8 @@ import "./App.css";
 
 export default function App() {
   const [user, setUser] = useState(null);
+  const [profil, setProfil] = useState(null);
+  const [erreurProfil, setErreurProfil] = useState(null);
   const [page, setPage] = useState("annonces");
 
   useEffect(() => {
@@ -15,6 +17,47 @@ export default function App() {
     const { data } = supabase.auth.onAuthStateChange((_e, s) => setUser(s?.user ?? null));
     return () => data.subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let actif = true;
+
+    const chargerProfil = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (error) throw error;
+        if (!data) throw new Error("Profil utilisateur introuvable.");
+        if (actif) {
+          setProfil({ userId: user.id, role: data.role });
+          setErreurProfil(null);
+        }
+      } catch (error) {
+        console.error("Impossible de charger le profil:", error);
+        if (actif) {
+          setErreurProfil({
+            userId: user.id,
+            message: "Impossible de charger votre profil. Vérifiez la configuration Supabase des rôles.",
+          });
+        }
+      }
+    };
+
+    chargerProfil();
+    return () => {
+      actif = false;
+    };
+  }, [user]);
+
+  const role = user && profil?.userId === user.id ? profil.role : null;
+  const messageErreurProfil =
+    user && erreurProfil?.userId === user.id ? erreurProfil.message : "";
+  const chargementProfil = Boolean(user && !role && !messageErreurProfil);
 
   return (
     <div className="app">
@@ -29,7 +72,9 @@ export default function App() {
       </header>
       <main>
         {!user && <Auth />}
-        {page === "annonces" && <Annonces user={user} />}
+        {chargementProfil && <p>Chargement de votre profil...</p>}
+        {messageErreurProfil && <p role="alert">{messageErreurProfil}</p>}
+        {page === "annonces" && <Annonces user={user} role={role} />}
         {page === "prix" && <Prix />}
         {page === "ia" && <AgentIA />}
       </main>

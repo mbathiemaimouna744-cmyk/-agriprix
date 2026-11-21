@@ -4,7 +4,7 @@ header { background: #2e7d32; color: #fff; padding: 10px 15px; border-radius: 10
 header h1 { margin: 0 0 8px; }
 nav button { margin-right: 6px; }
 button { background: #66bb6a; color: #fff; border: 0; padding: 8px 12px; border-radius: 6px; cursor: pointer; margin: 4px 4px 4px 0; }
-input { display: block; width: 100%; box-sizing: border-box; padding: 8px; margin: 6px 0; border: 1px solid #ccc; border-radius: 6px; }
+input, select { display: block; width: 100%; box-sizing: border-box; padding: 8px; margin: 6px 0; border: 1px solid #ccc; border-radius: 6px; }
 .card { background: #fff; padding: 14px; border-radius: 10px; margin: 12px 0; box-shadow: 0 1px 4px #0002; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
 table { width: 100%; border-collapse: collapse; }

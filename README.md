@@ -48,3 +48,10 @@ FOR SELECT
 TO anon, authenticated
 USING (true);
 ```
+
+## Rôles agriculteur et acheteur
+
+Exécutez le contenu de [supabase/roles.sql](./supabase/roles.sql) dans l'éditeur
+SQL du projet Supabase. Les comptes existants seront définis comme agriculteurs;
+les nouveaux comptes choisiront leur rôle à l'inscription. Seuls les
+agriculteurs peuvent publier ou supprimer leurs annonces.

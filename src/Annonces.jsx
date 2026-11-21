@@ -59,7 +59,7 @@ const badgePrix = (annonce, prixMarche) => {
   };
 };
 
-export default function Annonces({ user }) {
+export default function Annonces({ user, role }) {
   const [liste, setListe] = useState([]);
   const [filtre, setFiltre] = useState("");
   const [f, setF] = useState(vide);
@@ -110,7 +110,9 @@ export default function Annonces({ user }) {
   }, []);
 
   const publier = async () => {
-    if (!user) return alert("Connectez-vous pour publier une annonce.");
+    if (!user || role !== "agriculteur") {
+      return alert("Seuls les agriculteurs connectés peuvent publier une annonce.");
+    }
 
     const { error } = await supabase
       .from("annonces")
@@ -134,14 +136,21 @@ export default function Annonces({ user }) {
   return (
     <div>
       {user && (
-        <div className="card">
-          <h2>Publier une annonce</h2>
-          {Object.keys(vide).map((k) => (
-            <input key={k} placeholder={libelles[k]} value={f[k]}
-              onChange={(e) => setF({ ...f, [k]: e.target.value })} />
-          ))}
-          <button onClick={publier}>Publier</button>
-        </div>
+        role === "agriculteur" ? (
+          <div className="card">
+            <h2>Publier une annonce</h2>
+            {Object.keys(vide).map((k) => (
+              <input key={k} placeholder={libelles[k]} value={f[k]}
+                onChange={(e) => setF({ ...f, [k]: e.target.value })} />
+            ))}
+            <button onClick={publier}>Publier</button>
+          </div>
+        ) : role === "acheteur" ? (
+          <div className="card">
+            <h2>Espace acheteur</h2>
+            <p>Recherchez des produits et contactez directement les agriculteurs.</p>
+          </div>
+        ) : null
       )}
       <input className="search" placeholder="🔍 Rechercher un produit ou une région"
         value={filtre} onChange={(e) => setFiltre(e.target.value)} />
@@ -162,7 +171,9 @@ export default function Annonces({ user }) {
               <a href={`https://wa.me/221${a.telephone}`} target="_blank" rel="noreferrer">
                 💬 Contacter sur WhatsApp
               </a>
-              {user?.id === a.user_id && <button onClick={() => supprimer(a.id)}>Supprimer</button>}
+              {role === "agriculteur" && user?.id === a.user_id && (
+                <button onClick={() => supprimer(a.id)}>Supprimer</button>
+              )}
             </div>
           );
         })}
