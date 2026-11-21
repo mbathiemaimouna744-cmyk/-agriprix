@@ -11,3 +11,7 @@ table { width: 100%; border-collapse: collapse; }
 th, td { padding: 8px; border-bottom: 1px solid #ddd; text-align: left; }
 .chat { max-height: 300px; overflow-y: auto; }
 .user { color: #1b5e20; }
+.price-badge { display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 0.9rem; font-weight: 600; }
+.price-badge--fair { color: #1b5e20; background: #e8f5e9; }
+.price-badge--high { color: #8a4b08; background: #fff3e0; }
+.price-badge--low { color: #0d47a1; background: #e3f2fd; }
