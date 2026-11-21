@@ -15,3 +15,12 @@ th, td { padding: 8px; border-bottom: 1px solid #ddd; text-align: left; }
 .price-badge--fair { color: #1b5e20; background: #e8f5e9; }
 .price-badge--high { color: #8a4b08; background: #fff3e0; }
 .price-badge--low { color: #0d47a1; background: #e3f2fd; }
+.price-chart { margin: 20px 0 28px; }
+.price-chart__item { margin: 14px 0; }
+.price-chart__label { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 5px; }
+.price-chart__track { height: 14px; overflow: hidden; border-radius: 999px; background: #e8f5e9; }
+.price-chart__bar { display: block; height: 100%; border-radius: inherit; background: #2e7d32; }
+
+@media (max-width: 520px) {
+  .price-chart__label { align-items: flex-start; flex-direction: column; gap: 2px; }
+}

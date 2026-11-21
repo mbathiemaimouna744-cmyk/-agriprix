@@ -55,3 +55,9 @@ Exécutez le contenu de [supabase/roles.sql](./supabase/roles.sql) dans l'édite
 SQL du projet Supabase. Les comptes existants seront définis comme agriculteurs;
 les nouveaux comptes choisiront leur rôle à l'inscription. Seuls les
 agriculteurs peuvent publier ou supprimer leurs annonces.
+
+## Comparaison visuelle des prix
+
+L'onglet « Prix du marché » affiche des barres comparant les prix actuels par
+produit et région. Une évolution historique nécessite d'enregistrer plusieurs
+dates de relevés pour chaque produit et région.
