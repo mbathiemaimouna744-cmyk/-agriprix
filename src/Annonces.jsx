@@ -28,13 +28,21 @@ export default function Annonces({ user }) {
   }, []);
 
   const publier = async () => {
-    const { error } = await supabase.from("annonces").insert(f);
+    if (!user) return alert("Connectez-vous pour publier une annonce.");
+
+    const { error } = await supabase
+      .from("annonces")
+      .insert({ ...f, user_id: user.id });
     if (error) return alert(error.message);
     setF(vide);
     charger();
   };
   const supprimer = async (id) => {
-    await supabase.from("annonces").delete().eq("id", id);
+    const { error } = await supabase.from("annonces").delete().eq("id", id);
+    if (error) {
+      console.error("Impossible de supprimer l'annonce:", error);
+      return alert(error.message);
+    }
     charger();
   };
 
