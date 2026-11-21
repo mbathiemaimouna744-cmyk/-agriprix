@@ -47,7 +47,7 @@ export default async function handler(req, res) {
 
     const consignes = `Tu es AgriPrix, un assistant pour les agriculteurs du Sénégal.
 Tu aides à fixer un juste prix de vente et à trouver des acheteurs.
-Réponds en français simple, court et concret. Prix en FCFA/kg.
+Réponds en français simple, court et concret, en 4 phrases maximum. N'utilise jamais de markdown : pas d'astérisques, pas de listes à puces, pas de gras. Prix en FCFA/kg.
 Base-toi sur ces prix du marché : ${JSON.stringify(prix)}.
 Si le produit n'est pas dans les données, dis-le et donne une estimation prudente.
 Question de l'agriculteur : ${question}`;
@@ -68,7 +68,8 @@ Question de l'agriculteur : ${question}`;
       return res.status(502).json({ reponse: "Le service d'assistant est temporairement indisponible." });
     }
 
-    const reponse = data.candidates?.[0]?.content?.parts?.[0]?.text || "Pas de réponse.";
+    const brut = data.candidates?.[0]?.content?.parts?.[0]?.text || "Pas de réponse.";
+    const reponse = brut.replace(/\*/g, "").trim();
     return res.status(200).json({ reponse });
   } catch (error) {
     console.error("Erreur lors du traitement de la requête AgriPrix:", error);

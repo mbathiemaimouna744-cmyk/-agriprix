@@ -2,6 +2,13 @@ import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 
 const vide = { produit: "", quantite_kg: "", prix_kg: "", region: "", telephone: "" };
+const libelles = {
+  produit: "Produit (ex : Oignon)",
+  quantite_kg: "Quantité (kg)",
+  prix_kg: "Prix par kg (FCFA)",
+  region: "Région (ex : Thiès)",
+  telephone: "Téléphone (ex : 771234567)",
+};
 
 export default function Annonces({ user }) {
   const [liste, setListe] = useState([]);
@@ -55,7 +62,7 @@ export default function Annonces({ user }) {
         <div className="card">
           <h2>Publier une annonce</h2>
           {Object.keys(vide).map((k) => (
-            <input key={k} placeholder={k.replace("_", " ")} value={f[k]}
+            <input key={k} placeholder={libelles[k]} value={f[k]}
               onChange={(e) => setF({ ...f, [k]: e.target.value })} />
           ))}
           <button onClick={publier}>Publier</button>
