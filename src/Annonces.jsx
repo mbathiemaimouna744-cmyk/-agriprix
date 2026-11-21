@@ -77,6 +77,9 @@ export default function Annonces({ user, role }) {
   const [erreurPrix, setErreurPrix] = useState("");
   const [photo, setPhoto] = useState(null);
   const photoInput = useRef(null);
+  const [estimation, setEstimation] = useState("");
+  const [erreurEstimation, setErreurEstimation] = useState("");
+  const [estimationEnCours, setEstimationEnCours] = useState(false);
 
   const charger = async () => {
     const { data } = await supabase
@@ -161,6 +164,8 @@ export default function Annonces({ user, role }) {
     }
     setF(vide);
     setPhoto(null);
+    setEstimation("");
+    setErreurEstimation("");
     if (photoInput.current) photoInput.current.value = "";
     charger();
   };
@@ -206,6 +211,51 @@ export default function Annonces({ user, role }) {
     setPhoto(fichier);
   };
 
+  const estimerPrix = async () => {
+    const produit = f.produit.trim();
+    const region = f.region.trim();
+    if (!produit || !region) {
+      setErreurEstimation("Saisissez le produit et la région pour demander une estimation.");
+      return;
+    }
+
+    setEstimation("");
+    setErreurEstimation("");
+    setEstimationEnCours(true);
+    const question = `Estime un prix de vente conseillé en FCFA/kg pour ${produit} dans la région de ${region}${f.quantite_kg ? `, pour ${f.quantite_kg} kg` : ""}. Donne une fourchette et un prix conseillé, en précisant si les données sont insuffisantes.`;
+
+    try {
+      const response = await fetch("/api/agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.reponse || "Le service d'estimation est indisponible.");
+      }
+      if (typeof data.reponse !== "string" || !data.reponse.trim()) {
+        throw new Error("L'assistant n'a pas fourni d'estimation.");
+      }
+      setEstimation(data.reponse.trim());
+    } catch (error) {
+      console.error("Impossible d'estimer le prix:", error);
+      setErreurEstimation(
+        error instanceof Error ? error.message : "Impossible d'obtenir une estimation."
+      );
+    } finally {
+      setEstimationEnCours(false);
+    }
+  };
+
+  const modifierChamp = (champ, valeur) => {
+    setF((actuelle) => ({ ...actuelle, [champ]: valeur }));
+    if (["produit", "region", "quantite_kg"].includes(champ)) {
+      setEstimation("");
+      setErreurEstimation("");
+    }
+  };
+
   const regions = [...new Set(liste.map((annonce) => annonce.region).filter(Boolean))]
     .sort((a, b) => a.localeCompare(b, "fr"));
   const termeProduit = normaliser(filtre);
@@ -230,8 +280,23 @@ export default function Annonces({ user, role }) {
             <h2>Publier une annonce</h2>
             {Object.keys(vide).map((k) => (
               <input key={k} placeholder={libelles[k]} value={f[k]}
-                onChange={(e) => setF({ ...f, [k]: e.target.value })} />
+                onChange={(e) => modifierChamp(k, e.target.value)} />
             ))}
+            <button
+              type="button"
+              onClick={estimerPrix}
+              disabled={estimationEnCours}
+            >
+              {estimationEnCours ? "Estimation en cours..." : "Estimer mon prix"}
+            </button>
+            {erreurEstimation && <p role="alert">{erreurEstimation}</p>}
+            {estimation && (
+              <div className="price-suggestion" role="status">
+                <strong>Conseil de l'IA</strong>
+                <p>{estimation}</p>
+                <small>Vérifiez la suggestion, puis saisissez le prix choisi dans le formulaire.</small>
+              </div>
+            )}
             <label htmlFor="annonce-photo">Photo du produit (JPG, PNG ou WebP, 5 Mo max.)</label>
             <input
               ref={photoInput}

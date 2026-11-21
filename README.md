@@ -80,3 +80,6 @@ L'assistant utilise les prix du marché et jusqu'à 30 annonces de vente récent
 Les coordonnées téléphoniques et les identifiants des vendeurs ne sont pas
 transmis au modèle; l'assistant ne doit pas présenter une offre comme une
 demande d'achat ni garantir la disponibilité d'un produit.
+
+Le formulaire agriculteur permet aussi de demander une estimation pour un
+produit et une région. Le prix suggéré doit être vérifié et saisi par le vendeur.
