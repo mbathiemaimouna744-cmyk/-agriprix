@@ -73,3 +73,10 @@ au format JPG, PNG ou WebP, jusqu'à 5 Mo.
 
 Les annonces peuvent être recherchées par produit, filtrées par région et prix
 maximum, puis triées par prix croissant ou décroissant.
+
+## Assistant et annonces
+
+L'assistant utilise les prix du marché et jusqu'à 30 annonces de vente récentes.
+Les coordonnées téléphoniques et les identifiants des vendeurs ne sont pas
+transmis au modèle; l'assistant ne doit pas présenter une offre comme une
+demande d'achat ni garantir la disponibilité d'un produit.
