@@ -1,6 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase";
 
+const bucketPhotos = "annonce-photos";
+const tailleMaxPhoto = 5 * 1024 * 1024;
+const extensionsPhoto = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
 const vide = { produit: "", quantite_kg: "", prix_kg: "", region: "", telephone: "" };
 const libelles = {
   produit: "Produit (ex : Oignon)",
@@ -65,6 +72,8 @@ export default function Annonces({ user, role }) {
   const [f, setF] = useState(vide);
   const [prixMarche, setPrixMarche] = useState([]);
   const [erreurPrix, setErreurPrix] = useState("");
+  const [photo, setPhoto] = useState(null);
+  const photoInput = useRef(null);
 
   const charger = async () => {
     const { data } = await supabase
@@ -114,20 +123,84 @@ export default function Annonces({ user, role }) {
       return alert("Seuls les agriculteurs connectés peuvent publier une annonce.");
     }
 
+    let imagePath = null;
+    if (photo) {
+      const extension = extensionsPhoto[photo.type];
+      imagePath = `${user.id}/${crypto.randomUUID()}.${extension}`;
+      const { error: erreurUpload } = await supabase.storage
+        .from(bucketPhotos)
+        .upload(imagePath, photo, {
+          cacheControl: "3600",
+          contentType: photo.type,
+          upsert: false,
+        });
+
+      if (erreurUpload) {
+        console.error("Impossible de téléverser la photo:", erreurUpload);
+        return alert(erreurUpload.message);
+      }
+    }
+
     const { error } = await supabase
       .from("annonces")
-      .insert({ ...f, user_id: user.id });
-    if (error) return alert(error.message);
+      .insert({ ...f, user_id: user.id, image_path: imagePath });
+    if (error) {
+      console.error("Impossible de publier l'annonce:", error);
+      if (imagePath) {
+        const { error: erreurNettoyage } = await supabase.storage
+          .from(bucketPhotos)
+          .remove([imagePath]);
+        if (erreurNettoyage) {
+          console.error("Impossible de supprimer la photo téléversée:", erreurNettoyage);
+        }
+      }
+      return alert(error.message);
+    }
     setF(vide);
+    setPhoto(null);
+    if (photoInput.current) photoInput.current.value = "";
     charger();
   };
-  const supprimer = async (id) => {
-    const { error } = await supabase.from("annonces").delete().eq("id", id);
+  const supprimer = async (annonce) => {
+    const { error } = await supabase.from("annonces").delete().eq("id", annonce.id);
     if (error) {
       console.error("Impossible de supprimer l'annonce:", error);
       return alert(error.message);
     }
+
+    let erreurPhoto = null;
+    if (annonce.image_path) {
+      const { error: erreurSuppression } = await supabase.storage
+        .from(bucketPhotos)
+        .remove([annonce.image_path]);
+      if (erreurSuppression) {
+        console.error("Impossible de supprimer la photo de l'annonce:", erreurSuppression);
+        erreurPhoto = erreurSuppression;
+      }
+    }
     charger();
+    if (erreurPhoto) {
+      alert("L'annonce a été supprimée, mais sa photo n'a pas pu être supprimée.");
+    }
+  };
+
+  const choisirPhoto = (event) => {
+    const fichier = event.target.files?.[0];
+    if (!fichier) {
+      setPhoto(null);
+      return;
+    }
+    if (!extensionsPhoto[fichier.type]) {
+      event.target.value = "";
+      setPhoto(null);
+      return alert("Choisissez une image JPG, PNG ou WebP.");
+    }
+    if (fichier.size > tailleMaxPhoto) {
+      event.target.value = "";
+      setPhoto(null);
+      return alert("La photo doit faire 5 Mo maximum.");
+    }
+    setPhoto(fichier);
   };
 
   const visibles = liste.filter((a) =>
@@ -143,6 +216,14 @@ export default function Annonces({ user, role }) {
               <input key={k} placeholder={libelles[k]} value={f[k]}
                 onChange={(e) => setF({ ...f, [k]: e.target.value })} />
             ))}
+            <label htmlFor="annonce-photo">Photo du produit (JPG, PNG ou WebP, 5 Mo max.)</label>
+            <input
+              ref={photoInput}
+              id="annonce-photo"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={choisirPhoto}
+            />
             <button onClick={publier}>Publier</button>
           </div>
         ) : role === "acheteur" ? (
@@ -160,6 +241,14 @@ export default function Annonces({ user, role }) {
           const badge = badgePrix(a, prixMarche);
           return (
             <div className="card" key={a.id}>
+              {a.image_path && (
+                <img
+                  className="annonce-photo"
+                  src={supabase.storage.from(bucketPhotos).getPublicUrl(a.image_path).data.publicUrl}
+                  alt={`Photo du produit ${a.produit}`}
+                  loading="lazy"
+                />
+              )}
               <h3>{a.produit}</h3>
               <p>{a.quantite_kg} kg à {a.prix_kg} FCFA/kg</p>
               {badge && (
@@ -172,7 +261,7 @@ export default function Annonces({ user, role }) {
                 💬 Contacter sur WhatsApp
               </a>
               {role === "agriculteur" && user?.id === a.user_id && (
-                <button onClick={() => supprimer(a.id)}>Supprimer</button>
+                <button onClick={() => supprimer(a)}>Supprimer</button>
               )}
             </div>
           );

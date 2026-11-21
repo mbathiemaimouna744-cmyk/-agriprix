@@ -61,3 +61,10 @@ agriculteurs peuvent publier ou supprimer leurs annonces.
 L'onglet « Prix du marché » affiche des barres comparant les prix actuels par
 produit et région. Une évolution historique nécessite d'enregistrer plusieurs
 dates de relevés pour chaque produit et région.
+
+## Photos des annonces
+
+Après avoir exécuté [supabase/roles.sql](./supabase/roles.sql), exécutez
+[supabase/photos.sql](./supabase/photos.sql) dans l'éditeur SQL Supabase. Le
+bucket public autorise l'envoi et la suppression de photos par leur agriculteur,
+au format JPG, PNG ou WebP, jusqu'à 5 Mo.
