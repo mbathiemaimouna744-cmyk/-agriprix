@@ -69,6 +69,9 @@ const badgePrix = (annonce, prixMarche) => {
 export default function Annonces({ user, role }) {
   const [liste, setListe] = useState([]);
   const [filtre, setFiltre] = useState("");
+  const [regionFiltre, setRegionFiltre] = useState("");
+  const [prixMaximum, setPrixMaximum] = useState("");
+  const [tri, setTri] = useState("recent");
   const [f, setF] = useState(vide);
   const [prixMarche, setPrixMarche] = useState([]);
   const [erreurPrix, setErreurPrix] = useState("");
@@ -203,8 +206,21 @@ export default function Annonces({ user, role }) {
     setPhoto(fichier);
   };
 
-  const visibles = liste.filter((a) =>
-    (a.produit + a.region).toLowerCase().includes(filtre.toLowerCase()));
+  const regions = [...new Set(liste.map((annonce) => annonce.region).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "fr"));
+  const termeProduit = normaliser(filtre);
+  const limitePrix = prixMaximum === "" ? Infinity : Number(prixMaximum);
+  const visibles = liste
+    .filter((annonce) => (
+      normaliser(annonce.produit).includes(termeProduit) &&
+      (!regionFiltre || annonce.region === regionFiltre) &&
+      Number(annonce.prix_kg) <= limitePrix
+    ))
+    .sort((a, b) => {
+      if (tri === "prix-croissant") return Number(a.prix_kg) - Number(b.prix_kg);
+      if (tri === "prix-decroissant") return Number(b.prix_kg) - Number(a.prix_kg);
+      return 0;
+    });
 
   return (
     <div>
@@ -233,11 +249,42 @@ export default function Annonces({ user, role }) {
           </div>
         ) : null
       )}
-      <input className="search" placeholder="🔍 Rechercher un produit ou une région"
-        value={filtre} onChange={(e) => setFiltre(e.target.value)} />
+      <div className="filters">
+        <input
+          className="search"
+          placeholder="🔍 Rechercher un produit"
+          aria-label="Rechercher un produit"
+          value={filtre}
+          onChange={(e) => setFiltre(e.target.value)}
+        />
+        <select
+          aria-label="Filtrer par région"
+          value={regionFiltre}
+          onChange={(e) => setRegionFiltre(e.target.value)}
+        >
+          <option value="">Toutes les régions</option>
+          {regions.map((region) => <option key={region} value={region}>{region}</option>)}
+        </select>
+        <input
+          type="number"
+          min="0"
+          step="1"
+          placeholder="Prix maximum (FCFA/kg)"
+          aria-label="Prix maximum en FCFA par kilogramme"
+          value={prixMaximum}
+          onChange={(e) => setPrixMaximum(e.target.value)}
+        />
+        <select aria-label="Trier les annonces" value={tri} onChange={(e) => setTri(e.target.value)}>
+          <option value="recent">Plus récentes</option>
+          <option value="prix-croissant">Prix croissant</option>
+          <option value="prix-decroissant">Prix décroissant</option>
+        </select>
+      </div>
       {erreurPrix && <p role="status">{erreurPrix}</p>}
       <div className="grid">
-        {visibles.map((a) => {
+        {visibles.length === 0 ? (
+          <p>Aucune annonce ne correspond à ces filtres.</p>
+        ) : visibles.map((a) => {
           const badge = badgePrix(a, prixMarche);
           return (
             <div className="card" key={a.id}>

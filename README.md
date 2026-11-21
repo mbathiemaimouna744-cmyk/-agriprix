@@ -68,3 +68,8 @@ Après avoir exécuté [supabase/roles.sql](./supabase/roles.sql), exécutez
 [supabase/photos.sql](./supabase/photos.sql) dans l'éditeur SQL Supabase. Le
 bucket public autorise l'envoi et la suppression de photos par leur agriculteur,
 au format JPG, PNG ou WebP, jusqu'à 5 Mo.
+
+## Filtres des annonces
+
+Les annonces peuvent être recherchées par produit, filtrées par région et prix
+maximum, puis triées par prix croissant ou décroissant.
