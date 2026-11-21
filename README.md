@@ -1,0 +1,50 @@
+# AgriPrix
+
+## Développement local
+
+Installez les dépendances puis lancez l'application avec l'API :
+
+```sh
+npm install
+npm run dev:vercel
+```
+
+`npm run dev` lance uniquement Vite; la fonction `/api/agent` n'y est pas disponible.
+Vercel CLI peut demander une connexion et l'association à un projet.
+
+## Variables d'environnement
+
+Créez un fichier `.env` à la racine du projet. Il doit contenir :
+
+```dotenv
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-3.5-flash-lite
+```
+
+Ne partagez pas la clé Gemini et ne la publiez pas. `.env` est ignoré par Git.
+Redémarrez le serveur après avoir modifié ce fichier.
+
+## Accès aux prix du marché
+
+La lecture de `public.prix_marche` nécessite le privilège `SELECT` pour les
+rôles `anon` et `authenticated`. Exécutez cette commande dans l'éditeur SQL
+Supabase :
+
+```sql
+GRANT SELECT ON TABLE public.prix_marche TO anon, authenticated;
+```
+
+Si la sécurité au niveau des lignes (RLS) est activée pour cette table, ajoutez
+également une politique autorisant la lecture publique :
+
+```sql
+CREATE POLICY "prix_marche_read_anon"
+ON public.prix_marche
+FOR SELECT
+TO anon, authenticated
+USING (true);
+```
