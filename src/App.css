@@ -57,6 +57,10 @@ th, td { padding: 8px; border-bottom: 1px solid #ddd; text-align: left; }
 .price-alert-form input { margin: 0; }
 .price-alert { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; padding: 10px; border-radius: 8px; background: #f3f8f1; }
 .price-alert p { margin: 4px 0 0; }
+.purchase-request-form > p { line-height: 1.5; }
+.purchase-request-form .public-phone-consent { display: flex; align-items: flex-start; gap: 6px; margin: 8px 0; }
+.purchase-request-form .public-phone-consent input { display: inline-block; flex: 0 0 auto; width: auto; margin: 3px 0 0; }
+.request-label { color: #2e7d32; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; }
 @media (max-width: 520px) {
   .dashboard-stats, .price-alert-form { grid-template-columns: 1fr; }
   .admin-price-form { grid-template-columns: 1fr; }

@@ -7,6 +7,7 @@ import AgentIA from "./AgentIA";
 import Accueil from "./Accueil";
 import TableauBord from "./TableauBord";
 import Admin from "./Admin";
+import DemandesAchat from "./DemandesAchat";
 import "./App.css";
 
 export default function App() {
@@ -69,6 +70,7 @@ export default function App() {
         <nav>
           <button onClick={() => setPage("accueil")}>Accueil</button>
           <button onClick={() => setPage("annonces")}>Annonces</button>
+          <button onClick={() => setPage("demandes")}>Demandes d’achat</button>
           <button onClick={() => setPage("prix")}>Prix du marché</button>
           <button onClick={() => setPage("ia")}>Assistant IA</button>
           {user && <button onClick={() => setPage("tableau")}>Mon tableau de bord</button>}
@@ -82,6 +84,7 @@ export default function App() {
         {messageErreurProfil && <p role="alert">{messageErreurProfil}</p>}
         {page === "accueil" && <Accueil allerVers={setPage} />}
         {page === "annonces" && <Annonces user={user} role={role} />}
+        {page === "demandes" && <DemandesAchat user={user} role={role} />}
         {page === "prix" && <Prix />}
         {page === "ia" && <AgentIA />}
         {page === "tableau" && <TableauBord user={user} role={role} />}

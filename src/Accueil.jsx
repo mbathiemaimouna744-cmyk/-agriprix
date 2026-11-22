@@ -37,7 +37,7 @@ export default function Accueil({ allerVers }) {
           <h2>Vendez mieux. Achetez avec plus de confiance.</h2>
           <p>
             AgriPrix met les agriculteurs en relation avec les acheteurs grâce aux
-            prix du marché, aux annonces locales et à un assistant agricole.
+            annonces de vente et d’achat, aux prix du marché et à un assistant agricole.
           </p>
           <div className="hero__actions">
             <button type="button" onClick={() => allerVers("annonces")}>

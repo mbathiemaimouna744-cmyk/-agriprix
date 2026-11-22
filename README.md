@@ -74,6 +74,14 @@ au format JPG, PNG ou WebP, jusqu'à 5 Mo.
 Les annonces peuvent être recherchées par produit, filtrées par région et prix
 maximum, puis triées par prix croissant ou décroissant.
 
+## Demandes d'achat
+
+Exécutez [supabase/demandes_achat.sql](./supabase/demandes_achat.sql) dans
+l'éditeur SQL Supabase. Les acheteurs connectés peuvent publier le produit, la
+quantité, la région et un budget maximal facultatif recherchés. Les agriculteurs
+peuvent parcourir les demandes et contacter l'acheteur par SMS. Le numéro est
+visible publiquement après confirmation de l'acheteur.
+
 ## Assistant et annonces
 
 L'assistant utilise les prix du marché et jusqu'à 30 annonces de vente récentes.

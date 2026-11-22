@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase";
+import { normaliserNumeroSenegal } from "./telephone";
 
 const bucketPhotos = "annonce-photos";
 const tailleMaxPhoto = 5 * 1024 * 1024;
@@ -23,13 +24,6 @@ const normaliser = (valeur) =>
     .replace(/[\u0300-\u036f]/g, "")
     .trim()
     .toLocaleLowerCase("fr");
-
-const numeroWhatsApp = (telephone) => {
-  let chiffres = String(telephone ?? "").replace(/\D/g, "");
-  if (chiffres.startsWith("00")) chiffres = chiffres.slice(2);
-  if (chiffres.startsWith("221")) chiffres = chiffres.slice(3);
-  return `221${chiffres}`;
-};
 
 const badgePrix = (annonce, prixMarche) => {
   const produit = normaliser(annonce.produit);
@@ -513,13 +507,13 @@ export default function Annonces({ user, role }) {
               {a.telephone && (
                 <p className="seller-phone">
                   Téléphone :{" "}
-                  <a href={`tel:+${numeroWhatsApp(a.telephone)}`}>
-                    +{numeroWhatsApp(a.telephone)}
+                  <a href={`tel:+${normaliserNumeroSenegal(a.telephone)}`}>
+                    +{normaliserNumeroSenegal(a.telephone)}
                   </a>
                 </p>
               )}
               <a
-                href={`sms:+${numeroWhatsApp(a.telephone)}`}
+                href={`sms:+${normaliserNumeroSenegal(a.telephone)}`}
                 onClick={() => enregistrerContact(a)}
               >
                 ✉️ Envoyer un SMS
