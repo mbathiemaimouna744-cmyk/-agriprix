@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 
+const produitsHistorique = [
+  { code: "maize", nom: "Maïs" },
+  { code: "millet", nom: "Mil" },
+  { code: "rice", nom: "Riz" },
+  { code: "sorghum", nom: "Sorgho" },
+];
+
 export default function Prix() {
   const [prix, setPrix] = useState([]);
   const [chargement, setChargement] = useState(true);
@@ -11,6 +18,10 @@ export default function Prix() {
   const [filtreWfp, setFiltreWfp] = useState("");
   const [limiteWfp, setLimiteWfp] = useState(50);
   const [joursDepuisReleve, setJoursDepuisReleve] = useState(null);
+  const [historiqueBanqueMondiale, setHistoriqueBanqueMondiale] = useState(null);
+  const [chargementHistorique, setChargementHistorique] = useState(true);
+  const [erreurHistorique, setErreurHistorique] = useState("");
+  const [produitHistorique, setProduitHistorique] = useState("maize");
 
   useEffect(() => {
     let actif = true;
@@ -33,6 +44,35 @@ export default function Prix() {
     };
 
     charger();
+    return () => {
+      actif = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let actif = true;
+
+    const chargerHistorique = async () => {
+      try {
+        const response = await fetch("/api/prix-banque-mondiale");
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.erreur || "Impossible de charger l'historique des prix.");
+        }
+        if (actif) setHistoriqueBanqueMondiale(data);
+      } catch (error) {
+        console.error("Impossible de charger l'historique de la Banque mondiale:", error);
+        if (actif) {
+          setErreurHistorique(
+            error instanceof Error ? error.message : "La source historique est indisponible."
+          );
+        }
+      } finally {
+        if (actif) setChargementHistorique(false);
+      }
+    };
+
+    chargerHistorique();
     return () => {
       actif = false;
     };
@@ -92,6 +132,35 @@ export default function Prix() {
   const dateDernierReleve = prixWfp?.latestDate
     ? new Date(`${prixWfp.latestDate}T00:00:00`)
     : null;
+  const serieHistorique = (historiqueBanqueMondiale?.records || [])
+    .filter((record) => record.codeProduit === produitHistorique)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const produitHistoriqueSelectionne = produitsHistorique.find(
+    (produit) => produit.code === produitHistorique
+  );
+  const largeurGraphique = 800;
+  const hauteurGraphique = 300;
+  const margeGraphique = { gauche: 64, droite: 20, haut: 20, bas: 42 };
+  const valeursHistorique = serieHistorique.map((record) => record.prix_kg);
+  const minimumHistorique = Math.min(...valeursHistorique);
+  const maximumHistorique = Math.max(...valeursHistorique);
+  const plageHistorique = maximumHistorique - minimumHistorique || 1;
+  const pointsHistorique = serieHistorique.map((record, index) => {
+    const largeurUtile = largeurGraphique - margeGraphique.gauche - margeGraphique.droite;
+    const hauteurUtile = hauteurGraphique - margeGraphique.haut - margeGraphique.bas;
+    return {
+      ...record,
+      x: margeGraphique.gauche
+        + (serieHistorique.length > 1 ? index / (serieHistorique.length - 1) : 0) * largeurUtile,
+      y: margeGraphique.haut
+        + ((maximumHistorique - record.prix_kg) / plageHistorique) * hauteurUtile,
+    };
+  });
+  const ligneHistorique = pointsHistorique
+    .map((point) => `${point.x},${point.y}`)
+    .join(" ");
+  const historiqueRecent = serieHistorique.slice(-12).reverse();
+
   return (
     <div className="card">
       <h2>Prix du marché (FCFA/kg)</h2>
@@ -208,6 +277,125 @@ export default function Prix() {
               <button type="button" onClick={() => setLimiteWfp((limite) => limite + 50)}>
                 Afficher 50 relevés supplémentaires
               </button>
+            )}
+          </>
+        )}
+      </section>
+
+      <section className="historical-prices" aria-labelledby="historical-prices-title">
+        <h2 id="historical-prices-title">Évolution mensuelle estimée des prix</h2>
+        <p>
+          Série « Market Average » de la Banque mondiale, en FCFA/kg.
+          Elle combine des données observées et des estimations modélisées pour compléter
+          les périodes manquantes : ce n’est ni un relevé en temps réel ni un prix garanti
+          au producteur.
+        </p>
+        <p>
+          Source et méthodologie :{" "}
+          <a href="https://microdata.worldbank.org/catalog/6173" target="_blank" rel="noreferrer">
+            Banque mondiale — Monthly food price estimates by product and market
+          </a>
+          . Les prix ci-dessous sont une série agrégée, pas le prix d’un marché local précis.
+          {historiqueBanqueMondiale?.stale
+            ? " La copie en cache est utilisée car la source n’a pas répondu."
+            : ""}
+        </p>
+
+        {chargementHistorique ? (
+          <p>Chargement de l’historique des estimations...</p>
+        ) : erreurHistorique ? (
+          <p role="alert">{erreurHistorique}</p>
+        ) : (
+          <>
+            <label htmlFor="historique-produit">Produit à comparer</label>
+            <select
+              id="historique-produit"
+              value={produitHistorique}
+              onChange={(event) => setProduitHistorique(event.target.value)}
+            >
+              {produitsHistorique.map((produit) => (
+                <option key={produit.code} value={produit.code}>{produit.nom}</option>
+              ))}
+            </select>
+
+            {serieHistorique.length > 0 ? (
+              <>
+                <p>
+                  {produitHistoriqueSelectionne?.nom} : {serieHistorique.length} relevés
+                  entre {serieHistorique[0].date.slice(0, 7)} et{" "}
+                  {serieHistorique[serieHistorique.length - 1].date.slice(0, 7)}.
+                </p>
+                <div className="historical-chart">
+                  <svg
+                    viewBox={`0 0 ${largeurGraphique} ${hauteurGraphique}`}
+                    role="img"
+                    aria-label={`Évolution mensuelle estimée du prix du ${produitHistoriqueSelectionne?.nom} au Sénégal`}
+                  >
+                    {[0, 0.5, 1].map((fraction) => {
+                      const y = margeGraphique.haut
+                        + fraction * (hauteurGraphique - margeGraphique.haut - margeGraphique.bas);
+                      const valeur = maximumHistorique - fraction * plageHistorique;
+                      return (
+                        <g key={fraction}>
+                          <line
+                            x1={margeGraphique.gauche}
+                            x2={largeurGraphique - margeGraphique.droite}
+                            y1={y}
+                            y2={y}
+                            className="historical-chart__grid"
+                          />
+                          <text x={margeGraphique.gauche - 8} y={y + 4} textAnchor="end">
+                            {Math.round(valeur)}
+                          </text>
+                        </g>
+                      );
+                    })}
+                    <polyline points={ligneHistorique} className="historical-chart__line" />
+                    {pointsHistorique.map((point) => (
+                      <circle
+                        key={`${point.date}-${point.codeProduit}`}
+                        cx={point.x}
+                        cy={point.y}
+                        r="2"
+                        className="historical-chart__point"
+                      >
+                        <title>{point.date}: {point.prix_kg} FCFA/kg</title>
+                      </circle>
+                    ))}
+                    <text x={margeGraphique.gauche} y={hauteurGraphique - 10}>
+                      {serieHistorique[0].date.slice(0, 4)}
+                    </text>
+                    <text
+                      x={largeurGraphique - margeGraphique.droite}
+                      y={hauteurGraphique - 10}
+                      textAnchor="end"
+                    >
+                      {serieHistorique[serieHistorique.length - 1].date.slice(0, 4)}
+                    </text>
+                  </svg>
+                </div>
+                <p>Prix indicatifs modélisés, en FCFA/kg.</p>
+                <div className="historical-prices__table">
+                  <table>
+                    <thead>
+                      <tr><th>Mois</th><th>Prix estimé (FCFA/kg)</th></tr>
+                    </thead>
+                    <tbody>
+                      {historiqueRecent.map((record) => (
+                        <tr key={`${record.date}-${record.codeProduit}`}>
+                          <td>{new Date(`${record.date}T00:00:00`).toLocaleDateString("fr-FR", {
+                            year: "numeric",
+                            month: "long",
+                          })}</td>
+                          <td>{record.prix_kg}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            ) : (
+              <p>Aucune estimation disponible pour ce produit.</p>
             )}
           </>
         )}

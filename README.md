@@ -62,6 +62,25 @@ L'onglet « Prix du marché » affiche des barres comparant les prix actuels par
 produit et région. Une évolution historique nécessite d'enregistrer plusieurs
 dates de relevés pour chaque produit et région.
 
+## Source externe des prix
+
+L'API `/api/prix-wfp` récupère les dernières observations disponibles du jeu
+[WFP Food Prices for Senegal sur HDX](https://data.humdata.org/dataset/wfp-food-prices-for-senegal).
+Elle conserve le dernier relevé par marché, produit et région, uniquement pour
+les prix de détail exprimés en XOF/kg. L'application affiche la date du relevé
+et l'attribution de la source. Les séries sont généralement mensuelles et leur
+fraîcheur varie : ces données ne sont pas des prix en temps réel ni des prix
+garantis à la production. L'API est mise en cache pendant six heures.
+
+L'API `/api/prix-banque-mondiale` fournit une série mensuelle agrégée pour le
+Sénégal (maïs, mil, riz et sorgho) à partir du jeu [Monthly food price estimates
+by product and market](https://microdata.worldbank.org/catalog/6173). Ces valeurs
+combinent des prix observés et des estimations modélisées. Elles sont affichées
+séparément des relevés WFP et ne représentent ni un prix observé à chaque marché
+ni un prix garanti au producteur. La page affiche l'évolution historique en
+FCFA/kg et les douze dernières observations disponibles. La source est mise en
+cache pendant six heures.
+
 ## Photos des annonces
 
 Après avoir exécuté [supabase/roles.sql](./supabase/roles.sql), exécutez

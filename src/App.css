@@ -26,6 +26,13 @@ th, td { padding: 8px; border-bottom: 1px solid #ddd; text-align: left; }
 .price-chart__label { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 5px; }
 .price-chart__track { height: 14px; overflow: hidden; border-radius: 999px; background: #e8f5e9; }
 .price-chart__bar { display: block; height: 100%; border-radius: inherit; background: #2e7d32; }
+.historical-chart { width: 100%; overflow-x: auto; }
+.historical-chart svg { display: block; width: 100%; min-width: 520px; height: auto; }
+.historical-chart text { fill: #444; font-size: 12px; }
+.historical-chart__grid { stroke: #ddd; stroke-dasharray: 4 4; }
+.historical-chart__line { fill: none; stroke: #1565c0; stroke-linejoin: round; stroke-linecap: round; stroke-width: 3; }
+.historical-chart__point { fill: #1565c0; }
+.historical-prices__table { max-height: 320px; overflow-y: auto; }
 .hero { margin: 12px 0; padding: 28px; border-radius: 12px; color: #fff; background: linear-gradient(135deg, #205a28, #66bb6a); box-shadow: 0 2px 8px #0002; }
 .hero h2 { max-width: 650px; margin: 6px 0 10px; font-size: clamp(1.8rem, 5vw, 3rem); }
 .hero p { max-width: 680px; line-height: 1.55; }
