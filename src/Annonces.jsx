@@ -80,6 +80,11 @@ export default function Annonces({ user, role }) {
   const [estimation, setEstimation] = useState("");
   const [erreurEstimation, setErreurEstimation] = useState("");
   const [estimationEnCours, setEstimationEnCours] = useState(false);
+  const [evaluations, setEvaluations] = useState([]);
+  const [evaluationOuverte, setEvaluationOuverte] = useState(null);
+  const [noteEvaluation, setNoteEvaluation] = useState("5");
+  const [commentaireEvaluation, setCommentaireEvaluation] = useState("");
+  const [erreurEvaluation, setErreurEvaluation] = useState("");
 
   const charger = async () => {
     const { data } = await supabase
@@ -119,6 +124,30 @@ export default function Annonces({ user, role }) {
     };
 
     chargerPrix();
+    return () => {
+      actif = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let actif = true;
+
+    const chargerEvaluations = async () => {
+      const { data, error } = await supabase
+        .from("evaluations")
+        .select("seller_id,buyer_id,note,commentaire,created_at,updated_at")
+        .order("updated_at", { ascending: false });
+
+      if (!actif) return;
+      if (error) {
+        console.error("Impossible de charger les évaluations:", error);
+        setEvaluations([]);
+        return;
+      }
+      setEvaluations(data || []);
+    };
+
+    chargerEvaluations();
     return () => {
       actif = false;
     };
@@ -192,6 +221,28 @@ export default function Annonces({ user, role }) {
     }
   };
 
+  const enregistrerContact = (annonce) => {
+    if (!user) return;
+    try {
+      const stockage = JSON.parse(localStorage.getItem("agriprix_contacts") || "[]");
+      const contact = {
+        id: `${annonce.id}-${user.id}`,
+        produit: annonce.produit,
+        region: annonce.region,
+        telephone: annonce.telephone,
+      };
+      localStorage.setItem(
+        "agriprix_contacts",
+        JSON.stringify([
+          contact,
+          ...stockage.filter((item) => item.id !== contact.id),
+        ].slice(0, 20))
+      );
+    } catch (error) {
+      console.error("Impossible d'enregistrer le contact récent:", error);
+    }
+  };
+
   const choisirPhoto = (event) => {
     const fichier = event.target.files?.[0];
     if (!fichier) {
@@ -254,6 +305,78 @@ export default function Annonces({ user, role }) {
       setEstimation("");
       setErreurEstimation("");
     }
+  };
+
+  const resumeEvaluation = (sellerId) => {
+    const avis = evaluations.filter((evaluation) => evaluation.seller_id === sellerId);
+    if (avis.length === 0) return null;
+    const moyenne = avis.reduce((total, evaluation) => total + Number(evaluation.note), 0) / avis.length;
+    return { moyenne: moyenne.toFixed(1), nombre: avis.length };
+  };
+
+  const ouvrirEvaluation = (sellerId) => {
+    if (!user || role !== "acheteur") {
+      return alert("Seuls les acheteurs connectés peuvent évaluer un vendeur.");
+    }
+    const avis = evaluations.find(
+      (evaluation) => evaluation.seller_id === sellerId && evaluation.buyer_id === user.id
+    );
+    setEvaluationOuverte(sellerId);
+    setNoteEvaluation(String(avis?.note ?? "5"));
+    setCommentaireEvaluation(avis?.commentaire ?? "");
+    setErreurEvaluation("");
+  };
+
+  const enregistrerEvaluation = async (sellerId) => {
+    if (!user || role !== "acheteur") {
+      setErreurEvaluation("Seuls les acheteurs connectés peuvent évaluer un vendeur.");
+      return;
+    }
+
+    setErreurEvaluation("");
+    const evaluation = {
+      seller_id: sellerId,
+      buyer_id: user.id,
+      note: Number(noteEvaluation),
+      commentaire: commentaireEvaluation.trim(),
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase
+      .from("evaluations")
+      .upsert(evaluation, { onConflict: "seller_id,buyer_id" });
+
+    if (error) {
+      console.error("Impossible d'enregistrer l'évaluation:", error);
+      setErreurEvaluation(error.message);
+      return;
+    }
+
+    setEvaluationOuverte(null);
+    const { data } = await supabase
+      .from("evaluations")
+      .select("seller_id,buyer_id,note,commentaire,created_at,updated_at")
+      .order("updated_at", { ascending: false });
+    setEvaluations(data || []);
+  };
+
+  const supprimerEvaluation = async (sellerId) => {
+    if (!user) return;
+    const { error } = await supabase
+      .from("evaluations")
+      .delete()
+      .eq("seller_id", sellerId)
+      .eq("buyer_id", user.id);
+
+    if (error) {
+      console.error("Impossible de supprimer l'évaluation:", error);
+      setErreurEvaluation(error.message);
+      return;
+    }
+
+    setEvaluations((liste) => liste.filter(
+      (evaluation) => !(evaluation.seller_id === sellerId && evaluation.buyer_id === user.id)
+    ));
+    setEvaluationOuverte(null);
   };
 
   const regions = [...new Set(liste.map((annonce) => annonce.region).filter(Boolean))]
@@ -351,6 +474,10 @@ export default function Annonces({ user, role }) {
           <p>Aucune annonce ne correspond à ces filtres.</p>
         ) : visibles.map((a) => {
           const badge = badgePrix(a, prixMarche);
+          const resume = resumeEvaluation(a.user_id);
+          const monAvis = evaluations.find(
+            (evaluation) => evaluation.seller_id === a.user_id && evaluation.buyer_id === user?.id
+          );
           return (
             <div className="card" key={a.id}>
               {a.image_path && (
@@ -369,9 +496,68 @@ export default function Annonces({ user, role }) {
                 </p>
               )}
               <p>📍 {a.region}</p>
-              <a href={`https://wa.me/221${a.telephone}`} target="_blank" rel="noreferrer">
+              {resume ? (
+                <p className="seller-rating" aria-label={`Note moyenne ${resume.moyenne} sur 5`}>
+                  ⭐ {resume.moyenne}/5 · {resume.nombre} avis
+                </p>
+              ) : (
+                <p className="seller-rating">Aucune évaluation</p>
+              )}
+              <a
+                href={`https://wa.me/221${a.telephone}`}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => enregistrerContact(a)}
+              >
                 💬 Contacter sur WhatsApp
               </a>
+              {role === "acheteur" && (
+                <button type="button" onClick={() => ouvrirEvaluation(a.user_id)}>
+                  {monAvis ? "Modifier mon avis" : "Évaluer le vendeur"}
+                </button>
+              )}
+              {evaluationOuverte === a.user_id && (
+                <div className="seller-review">
+                  <label htmlFor={`note-${a.id}`}>Note sur 5</label>
+                  <select
+                    id={`note-${a.id}`}
+                    value={noteEvaluation}
+                    onChange={(event) => setNoteEvaluation(event.target.value)}
+                  >
+                    {[1, 2, 3, 4, 5].map((note) => (
+                      <option key={note} value={note}>{note} étoile{note > 1 ? "s" : ""}</option>
+                    ))}
+                  </select>
+                  <label htmlFor={`commentaire-${a.id}`}>Commentaire</label>
+                  <textarea
+                    id={`commentaire-${a.id}`}
+                    maxLength={300}
+                    value={commentaireEvaluation}
+                    onChange={(event) => setCommentaireEvaluation(event.target.value)}
+                    placeholder="Votre expérience avec ce vendeur"
+                  />
+                  {erreurEvaluation && <p role="alert">{erreurEvaluation}</p>}
+                  <button type="button" onClick={() => enregistrerEvaluation(a.user_id)}>
+                    Publier mon avis
+                  </button>
+                  <button
+                    type="button"
+                    className="button-secondary"
+                    onClick={() => setEvaluationOuverte(null)}
+                  >
+                    Annuler
+                  </button>
+                  {monAvis && (
+                    <button
+                      type="button"
+                      className="button-danger"
+                      onClick={() => supprimerEvaluation(a.user_id)}
+                    >
+                      Supprimer mon avis
+                    </button>
+                  )}
+                </div>
+              )}
               {role === "agriculteur" && user?.id === a.user_id && (
                 <button onClick={() => supprimer(a)}>Supprimer</button>
               )}

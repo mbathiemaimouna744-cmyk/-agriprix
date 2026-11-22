@@ -83,3 +83,31 @@ demande d'achat ni garantir la disponibilité d'un produit.
 
 Le formulaire agriculteur permet aussi de demander une estimation pour un
 produit et une région. Le prix suggéré doit être vérifié et saisi par le vendeur.
+
+Dans l'onglet de l'assistant, le contexte des cinq derniers échanges est conservé
+tant que la page reste ouverte. Le bouton « Nouvelle discussion » efface cet
+historique; il n'est pas enregistré après fermeture ou rechargement de la page.
+L'assistant répond en français ou en wolof selon la langue utilisée dans la question.
+Il peut aussi donner des conseils prudents sur la saison, le stockage et le bon moment pour vendre, sans transformer une tendance en certitude.
+
+## Tableau de bord et alertes
+
+Exécutez [supabase/alertes.sql](./supabase/alertes.sql) dans l'éditeur SQL
+Supabase. Chaque utilisateur connecté peut configurer des alertes de prix dans
+son tableau de bord. Les annonces publiées, évaluations et contacts récents
+s'affichent également dans cet espace.
+
+## Administration
+
+Exécutez [supabase/admin.sql](./supabase/admin.sql) après les scripts des rôles.
+Définissez manuellement le rôle `admin` d'un compte dans `public.profiles`.
+Cet espace permet de supprimer les annonces signalées ou modérées et de gérer
+les prix du marché. Le rôle administrateur est protégé par les politiques RLS.
+
+## Évaluations des vendeurs
+
+Exécutez [supabase/evaluations.sql](./supabase/evaluations.sql) dans l'éditeur SQL
+Supabase. Les acheteurs connectés peuvent attribuer une note de 1 à 5 étoiles et
+un commentaire à un agriculteur. Un acheteur ne peut publier qu'un avis par
+vendeur; il peut ensuite le modifier ou le supprimer. Les moyennes et avis sont
+consultables publiquement.

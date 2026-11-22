@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS public.profiles (
   user_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  role text NOT NULL CHECK (role IN ('agriculteur', 'acheteur')),
+  role text NOT NULL CHECK (role IN ('agriculteur', 'acheteur', 'admin')),
   created_at timestamptz NOT NULL DEFAULT now()
 );
 

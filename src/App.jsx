@@ -4,13 +4,16 @@ import Auth from "./Auth";
 import Annonces from "./Annonces";
 import Prix from "./Prix";
 import AgentIA from "./AgentIA";
+import Accueil from "./Accueil";
+import TableauBord from "./TableauBord";
+import Admin from "./Admin";
 import "./App.css";
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [profil, setProfil] = useState(null);
   const [erreurProfil, setErreurProfil] = useState(null);
-  const [page, setPage] = useState("annonces");
+  const [page, setPage] = useState("accueil");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null));
@@ -64,19 +67,25 @@ export default function App() {
       <header>
         <h1>🌾 AgriPrix</h1>
         <nav>
+          <button onClick={() => setPage("accueil")}>Accueil</button>
           <button onClick={() => setPage("annonces")}>Annonces</button>
           <button onClick={() => setPage("prix")}>Prix du marché</button>
           <button onClick={() => setPage("ia")}>Assistant IA</button>
+          {user && <button onClick={() => setPage("tableau")}>Mon tableau de bord</button>}
+          {role === "admin" && <button onClick={() => setPage("admin")}>Administration</button>}
           {user && <button onClick={() => supabase.auth.signOut()}>Déconnexion</button>}
         </nav>
       </header>
       <main>
-        {!user && <Auth />}
+        {!user && page !== "accueil" && <Auth />}
         {chargementProfil && <p>Chargement de votre profil...</p>}
         {messageErreurProfil && <p role="alert">{messageErreurProfil}</p>}
+        {page === "accueil" && <Accueil allerVers={setPage} />}
         {page === "annonces" && <Annonces user={user} role={role} />}
         {page === "prix" && <Prix />}
         {page === "ia" && <AgentIA />}
+        {page === "tableau" && <TableauBord user={user} role={role} />}
+        {page === "admin" && <Admin user={user} role={role} />}
       </main>
     </div>
   );

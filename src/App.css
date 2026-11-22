@@ -26,7 +26,46 @@ th, td { padding: 8px; border-bottom: 1px solid #ddd; text-align: left; }
 .price-chart__label { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 5px; }
 .price-chart__track { height: 14px; overflow: hidden; border-radius: 999px; background: #e8f5e9; }
 .price-chart__bar { display: block; height: 100%; border-radius: inherit; background: #2e7d32; }
+.hero { margin: 12px 0; padding: 28px; border-radius: 12px; color: #fff; background: linear-gradient(135deg, #205a28, #66bb6a); box-shadow: 0 2px 8px #0002; }
+.hero h2 { max-width: 650px; margin: 6px 0 10px; font-size: clamp(1.8rem, 5vw, 3rem); }
+.hero p { max-width: 680px; line-height: 1.55; }
+.hero__eyebrow { margin: 0; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+.hero__actions { display: flex; flex-wrap: wrap; margin-top: 18px; }
+.hero__actions button { min-height: 42px; }
+.hero__actions .button-secondary { background: #fff; color: #205a28; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.stats article { display: flex; flex-direction: column; min-height: 92px; align-items: center; justify-content: center; border-radius: 10px; background: #fff; text-align: center; box-shadow: 0 1px 4px #0001; }
+.stats strong { color: #2e7d32; font-size: 1.8rem; }
+.features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0; }
+.feature-card { padding: 18px; border-radius: 10px; background: #fff; box-shadow: 0 1px 4px #0001; }
+.feature-card h3 { margin-top: 0; color: #205a28; }
+.feature-card p { line-height: 1.5; }
+.seller-rating { color: #5d4b00; font-weight: 700; }
+.seller-review { display: grid; gap: 6px; margin-top: 10px; padding: 10px; border-radius: 8px; background: #f3f8f1; }
+.seller-review textarea { min-height: 72px; resize: vertical; box-sizing: border-box; width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; }
+.seller-review button { margin: 2px 4px 0 0; }
+.button-danger { background: #b71c1c; }
+.dashboard-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0; }
+.dashboard-stats article { display: flex; flex-direction: column; min-height: 92px; align-items: center; justify-content: center; border-radius: 10px; background: #fff; box-shadow: 0 1px 4px #0001; }
+.dashboard-stats strong { color: #2e7d32; font-size: 1.8rem; }
+.review-history { margin: 8px 0; padding: 10px; border-left: 3px solid #66bb6a; background: #f8fbf7; }
+.admin-list article, .admin-price { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; padding: 10px; border-radius: 8px; background: #f3f8f1; }
+.admin-list p { margin: 4px 0 0; }
+.admin-price-form { display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 8px; align-items: center; }
+.admin-price-form input { margin: 0; }
+.price-alert-form { display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 8px; align-items: center; }
+.price-alert-form input { margin: 0; }
+.price-alert { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; padding: 10px; border-radius: 8px; background: #f3f8f1; }
+.price-alert p { margin: 4px 0 0; }
+@media (max-width: 520px) {
+  .dashboard-stats, .price-alert-form { grid-template-columns: 1fr; }
+  .admin-price-form { grid-template-columns: 1fr; }
+  .admin-list article, .admin-price { align-items: flex-start; flex-direction: column; }
+  .price-alert { align-items: flex-start; flex-direction: column; }
+}
 
 @media (max-width: 520px) {
   .price-chart__label { align-items: flex-start; flex-direction: column; gap: 2px; }
+  .hero { padding: 20px; }
+  .stats, .features { grid-template-columns: 1fr; }
 }
