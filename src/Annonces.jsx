@@ -24,6 +24,13 @@ const normaliser = (valeur) =>
     .trim()
     .toLocaleLowerCase("fr");
 
+const numeroWhatsApp = (telephone) => {
+  let chiffres = String(telephone ?? "").replace(/\D/g, "");
+  if (chiffres.startsWith("00")) chiffres = chiffres.slice(2);
+  if (chiffres.startsWith("221")) chiffres = chiffres.slice(3);
+  return `221${chiffres}`;
+};
+
 const badgePrix = (annonce, prixMarche) => {
   const produit = normaliser(annonce.produit);
   const region = normaliser(annonce.region);
@@ -503,13 +510,19 @@ export default function Annonces({ user, role }) {
               ) : (
                 <p className="seller-rating">Aucune évaluation</p>
               )}
+              {a.telephone && (
+                <p className="seller-phone">
+                  Téléphone :{" "}
+                  <a href={`tel:+${numeroWhatsApp(a.telephone)}`}>
+                    +{numeroWhatsApp(a.telephone)}
+                  </a>
+                </p>
+              )}
               <a
-                href={`https://wa.me/221${a.telephone}`}
-                target="_blank"
-                rel="noreferrer"
+                href={`sms:+${numeroWhatsApp(a.telephone)}`}
                 onClick={() => enregistrerContact(a)}
               >
-                💬 Contacter sur WhatsApp
+                ✉️ Envoyer un SMS
               </a>
               {role === "acheteur" && (
                 <button type="button" onClick={() => ouvrirEvaluation(a.user_id)}>
