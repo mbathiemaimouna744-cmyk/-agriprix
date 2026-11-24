@@ -7,6 +7,8 @@ export default function TableauBord({ user, role }) {
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState("");
   const [alertes, setAlertes] = useState([]);
+  const [annonceEnCours, setAnnonceEnCours] = useState(null);
+  const [maintenant, setMaintenant] = useState(null);
   const [produitAlerte, setProduitAlerte] = useState("");
   const [regionAlerte, setRegionAlerte] = useState("");
   const [prixAlerte, setPrixAlerte] = useState("");
@@ -23,7 +25,7 @@ export default function TableauBord({ user, role }) {
         const [mesAnnonces, mesEvaluations, mesAlertes] = await Promise.all([
           supabase
             .from("annonces")
-            .select("id,produit,quantite_kg,prix_kg,region,created_at")
+            .select("id,produit,quantite_kg,prix_kg,region,created_at,statut,expires_at")
             .eq("user_id", user.id)
             .order("created_at", { ascending: false }),
           supabase
@@ -58,6 +60,13 @@ export default function TableauBord({ user, role }) {
       actif = false;
     };
   }, [user]);
+
+  useEffect(() => {
+    const actualiserMaintenant = () => setMaintenant(Date.now());
+    actualiserMaintenant();
+    const intervalle = window.setInterval(actualiserMaintenant, 60 * 1000);
+    return () => window.clearInterval(intervalle);
+  }, []);
 
   let contacts = [];
   try {
@@ -105,6 +114,34 @@ export default function TableauBord({ user, role }) {
     setAlertes((liste) => liste.filter((alerte) => alerte.id !== id));
   };
 
+  const modifierDisponibiliteAnnonce = async (annonce, remettreEnVente) => {
+    setErreur("");
+    setAnnonceEnCours(annonce.id);
+    const modification = remettreEnVente
+      ? {
+          statut: "disponible",
+          expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        }
+      : { statut: "vendu" };
+    const { data, error } = await supabase
+      .from("annonces")
+      .update(modification)
+      .eq("id", annonce.id)
+      .eq("user_id", user.id)
+      .select("id,produit,quantite_kg,prix_kg,region,created_at,statut,expires_at")
+      .single();
+
+    if (error) {
+      console.error("Impossible de modifier la disponibilité de l'annonce:", error);
+      setErreur(error.message);
+      setAnnonceEnCours(null);
+      return;
+    }
+
+    setAnnonces((liste) => liste.map((item) => item.id === annonce.id ? data : item));
+    setAnnonceEnCours(null);
+  };
+
   if (!user) return <div className="card"><p>Connectez-vous pour consulter votre tableau de bord.</p></div>;
   if (chargement) return <div className="card"><p>Chargement de votre tableau de bord...</p></div>;
 
@@ -124,13 +161,38 @@ export default function TableauBord({ user, role }) {
             <p>Vous n'avez encore publié aucune annonce.</p>
           ) : (
             <div className="grid">
-              {annonces.map((annonce) => (
-                <article className="card" key={annonce.id}>
-                  <h3>{annonce.produit}</h3>
-                  <p>{annonce.quantite_kg} kg à {annonce.prix_kg} FCFA/kg</p>
-                  <p>📍 {annonce.region}</p>
-                </article>
-              ))}
+              {annonces.map((annonce) => {
+                const dateExpiration = new Date(annonce.expires_at).getTime();
+                const expiree = maintenant !== null && dateExpiration <= maintenant;
+                const disponible = annonce.statut === "disponible" && !expiree;
+                const statut = annonce.statut === "vendu" ? "Vendue" : expiree ? "Expirée" : "Disponible";
+                const statutClasse = annonce.statut === "vendu" ? "vendu" : expiree ? "expiree" : "disponible";
+                return (
+                  <article className="card" key={annonce.id}>
+                    <h3>{annonce.produit}</h3>
+                    <p>{annonce.quantite_kg} kg à {annonce.prix_kg} FCFA/kg</p>
+                    <p>📍 {annonce.region}</p>
+                    <p className={`annonce-statut annonce-statut--${statutClasse}`}>
+                      {statut}
+                    </p>
+                    <p className="annonce-expiration">
+                      {disponible ? "Expire le" : "Date d'expiration"}{" "}
+                      {new Date(annonce.expires_at).toLocaleDateString("fr-FR")}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => modifierDisponibiliteAnnonce(annonce, !disponible)}
+                      disabled={annonceEnCours === annonce.id}
+                    >
+                      {annonceEnCours === annonce.id
+                        ? "Mise à jour..."
+                        : disponible
+                          ? "Marquer comme vendu"
+                          : "Remettre en vente 30 jours"}
+                    </button>
+                  </article>
+                );
+              })}
             </div>
           )}
         </section>

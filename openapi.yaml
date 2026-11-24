@@ -1,0 +1,338 @@
+openapi: 3.0.3
+info:
+  title: AgriPrix API
+  version: 1.0.0
+  description: >
+    Contrat des fonctions serveur AgriPrix. Les prix WFP et Banque mondiale
+    sont des données de consultation; l'assistant accepte une question et un
+    historique optionnel. Les valeurs ne constituent pas une garantie de prix.
+    Les endpoints publics ont répondu lors de la vérification du 24 novembre
+    2026; synchroniser le déploiement avec la version finale du dépôt avant
+    remise.
+servers:
+  - url: https://agriprix.vercel.app
+    description: Déploiement public vérifié le 24 novembre 2026
+  - url: http://localhost:3000
+    description: Développement local avec Vercel CLI (`npm run dev:vercel`)
+tags:
+  - name: Assistant
+  - name: Prix
+paths:
+  /api/agent:
+    post:
+      tags: [Assistant]
+      operationId: interrogerAssistant
+      summary: Poser une question à l'assistant AgriPrix
+      description: >
+        Le serveur charge les prix et les annonces Supabase puis interroge
+        Gemini. L'historique contient au plus 10 messages, alterne user et
+        assistant, commence par user et comporte un nombre pair de messages.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentRequest'
+            example:
+              question: Quel est le prix récent de l'oignon à Dakar ?
+              language: fr
+              history: []
+      responses:
+        '200':
+          description: Réponse de l'assistant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResponse'
+              example:
+                reponse: Les derniers prix disponibles doivent être comparés selon leur date et leur source.
+        '400':
+          description: Question absente ou historique invalide
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResponse'
+              example:
+                reponse: Veuillez saisir une question.
+        '405':
+          description: Méthode autre que POST
+          headers:
+            Allow:
+              schema:
+                type: string
+              example: POST
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResponse'
+        '500':
+          description: Configuration serveur incomplète ou erreur interne
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResponse'
+        '502':
+          description: Échec de chargement des données ou service Gemini indisponible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResponse'
+        '503':
+          description: Service Gemini momentanément surchargé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResponse'
+
+  /api/prix-wfp:
+    get:
+      tags: [Prix]
+      operationId: obtenirPrixWfp
+      summary: Obtenir les dernières observations WFP disponibles
+      description: >
+        Retourne le dernier prix de détail en XOF/kg par produit, région et
+        marché. Le flux est mis en cache et n'est pas temps réel.
+      responses:
+        '200':
+          description: Observations WFP diffusées via HDX
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              example: s-maxage=21600, stale-while-revalidate=86400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WfpResponse'
+              example:
+                latestDate: '2026-10-15'
+                source: WFP Food Prices for Senegal, diffusé par HDX
+                sourceUrl: https://data.humdata.org/dataset/wfp-food-prices-for-senegal
+                fetchedAt: '2026-10-16T08:30:00.000Z'
+                stale: false
+                records:
+                  - date: '2026-10-15'
+                    region: Kaolack
+                    marche: Kaolack
+                    produit: Oignon importé
+                    prix_kg: 713
+                    devise: XOF
+                    unite: KG
+        '405':
+          description: Méthode autre que GET
+          headers:
+            Allow:
+              schema:
+                type: string
+              example: GET
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalApiError'
+        '502':
+          description: Source WFP indisponible et aucune copie exploitable en cache
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalApiError'
+
+  /api/prix-banque-mondiale:
+    get:
+      tags: [Prix]
+      operationId: obtenirHistoriqueBanqueMondiale
+      summary: Obtenir l'historique mensuel agrégé des prix
+      description: >
+        Retourne des prix mensuels estimés pour le Sénégal, agrégés par
+        « Market Average ». La série combine observations et estimations
+        modélisées et ne représente pas un marché local précis.
+      responses:
+        '200':
+          description: Série historique de la Banque mondiale
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              example: s-maxage=21600, stale-while-revalidate=86400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorldBankResponse'
+              example:
+                firstDate: '2007-01-01'
+                latestDate: '2026-10-01'
+                source: Monthly food price estimates by product and market
+                sourceUrl: https://microdata.worldbank.org/catalog/6173
+                fetchedAt: '2026-10-16T08:30:00.000Z'
+                stale: false
+                records:
+                  - date: '2026-10-01'
+                    codeProduit: maize
+                    produit: Maïs
+                    prix_kg: 300
+                    marche: Market Average
+                    region: Market Average
+                    unite: KG
+                    devise: XOF
+        '405':
+          description: Méthode autre que GET
+          headers:
+            Allow:
+              schema:
+                type: string
+              example: GET
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalApiError'
+        '502':
+          description: Source indisponible et aucune copie exploitable en cache
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalApiError'
+
+components:
+  schemas:
+    AgentRequest:
+      type: object
+      required: [question]
+      properties:
+        question:
+          type: string
+          minLength: 1
+          description: Question de l'utilisateur; les espaces seuls sont refusés.
+        language:
+          type: string
+          enum: [fr, wolof]
+          description: Langue de réponse souhaitée; si omise, elle est détectée depuis la question.
+        history:
+          type: array
+          maxItems: 10
+          description: >
+            Historique optionnel. Il doit avoir une longueur paire et alterner
+            les rôles user puis assistant. Le texte de chaque message fait au
+            plus 2 000 caractères.
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+    ChatMessage:
+      type: object
+      required: [role, text]
+      properties:
+        role:
+          type: string
+          enum: [user, assistant]
+        text:
+          type: string
+          minLength: 1
+          maxLength: 2000
+    AgentResponse:
+      type: object
+      required: [reponse]
+      properties:
+        reponse:
+          type: string
+    ExternalApiError:
+      type: object
+      required: [erreur]
+      properties:
+        erreur:
+          type: string
+    WfpResponse:
+      type: object
+      required: [records, latestDate, source, sourceUrl, fetchedAt, stale]
+      properties:
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/WfpPriceRecord'
+        latestDate:
+          type: string
+          format: date
+        source:
+          type: string
+        sourceUrl:
+          type: string
+          format: uri
+        fetchedAt:
+          type: string
+          format: date-time
+        stale:
+          type: boolean
+    WfpPriceRecord:
+      type: object
+      required: [date, region, marche, produit, prix_kg, devise, unite]
+      properties:
+        date:
+          type: string
+          format: date
+        region:
+          type: string
+        marche:
+          type: string
+        produit:
+          type: string
+        prix_kg:
+          type: number
+          exclusiveMinimum: 0
+        type_prix:
+          type: string
+          enum: [detail]
+          description: Peut être absent sur la version publique antérieure au déploiement du code courant.
+        devise:
+          type: string
+          enum: [XOF]
+        unite:
+          type: string
+          enum: [KG]
+    WorldBankResponse:
+      type: object
+      required: [records, firstDate, latestDate, source, sourceUrl, fetchedAt, stale]
+      properties:
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorldBankPriceRecord'
+        firstDate:
+          type: string
+          format: date
+        latestDate:
+          type: string
+          format: date
+        source:
+          type: string
+        sourceUrl:
+          type: string
+          format: uri
+        fetchedAt:
+          type: string
+          format: date-time
+        stale:
+          type: boolean
+    WorldBankPriceRecord:
+      type: object
+      required: [date, codeProduit, produit, prix_kg, marche, unite, devise]
+      properties:
+        date:
+          type: string
+          format: date
+        codeProduit:
+          type: string
+          enum: [maize, millet, rice, sorghum]
+        produit:
+          type: string
+          enum: [Maïs, Mil, Riz, Sorgho]
+        prix_kg:
+          type: number
+          exclusiveMinimum: 0
+        marche:
+          type: string
+          enum: [Market Average]
+        region:
+          type: string
+          nullable: true
+        unite:
+          type: string
+          enum: [KG]
+        devise:
+          type: string
+          enum: [XOF]

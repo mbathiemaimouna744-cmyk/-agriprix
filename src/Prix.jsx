@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
+import {
+  datePrixAffichee,
+  libelleTypePrix,
+  valeurPrixAffichee,
+} from "./prixUtils";
 
 const produitsHistorique = [
   { code: "maize", nom: "Maïs" },
@@ -175,13 +180,16 @@ export default function Prix() {
           {donneesGraphique.length > 0 && (
             <section className="price-chart" aria-labelledby="price-chart-title">
               <h3 id="price-chart-title">Comparaison des prix par produit et région</h3>
-              <p>Les barres sont proportionnelles au prix le plus élevé : {prixMax} FCFA/kg.</p>
+              <p>
+                Les barres sont proportionnelles au prix le plus élevé : {prixMax} FCFA/kg.
+                Les fourchettes sont représentées par leur milieu uniquement pour le graphique.
+              </p>
               <div className="price-chart__list">
                 {donneesGraphique.map((item) => (
                   <div className="price-chart__item" key={item.id}>
                     <div className="price-chart__label">
-                      <span>{item.produit} — {item.region}</span>
-                      <strong>{item.valeur} FCFA/kg</strong>
+                      <span>{item.produit} — {item.region} — {libelleTypePrix(item.type_prix)}</span>
+                      <strong>{valeurPrixAffichee(item)} FCFA/kg</strong>
                     </div>
                     <div
                       className="price-chart__track"
@@ -198,18 +206,33 @@ export default function Prix() {
               </div>
             </section>
           )}
-          <table>
-            <thead>
-              <tr><th>Produit</th><th>Région</th><th>Prix</th><th>Date</th></tr>
-            </thead>
-            <tbody>
-              {prix.map((p) => (
-                <tr key={p.id}>
-                  <td>{p.produit}</td><td>{p.region}</td><td>{p.prix_kg}</td><td>{p.date}</td>
+          <div className="market-prices__table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Produit</th><th>Région</th><th>Prix (FCFA/kg)</th><th>Date</th><th>Type de prix</th><th>Source</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {prix.map((p) => (
+                  <tr key={p.id}>
+                    <td>{p.produit}</td>
+                    <td>{p.region}</td>
+                    <td>{valeurPrixAffichee(p)}</td>
+                    <td>{datePrixAffichee(p)}</td>
+                    <td>{libelleTypePrix(p.type_prix)}</td>
+                    <td>
+                      {p.source_url && /^https?:\/\//i.test(p.source_url) ? (
+                        <a href={p.source_url} target="_blank" rel="noreferrer">
+                          {p.source || p.source_url}
+                        </a>
+                      ) : p.source || "Source à renseigner"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
 
@@ -258,7 +281,7 @@ export default function Prix() {
             <div className="external-prices__table">
               <table>
                 <thead>
-                  <tr><th>Date</th><th>Produit</th><th>Région / marché</th><th>Prix</th></tr>
+                  <tr><th>Date</th><th>Produit</th><th>Région / marché</th><th>Type</th><th>Prix</th></tr>
                 </thead>
                 <tbody>
                   {prixWfpVisibles.map((item) => (
@@ -266,6 +289,7 @@ export default function Prix() {
                       <td>{new Date(`${item.date}T00:00:00`).toLocaleDateString("fr-FR")}</td>
                       <td>{item.produit}</td>
                       <td>{item.region} — {item.marche}</td>
+                      <td>{libelleTypePrix(item.type_prix)}</td>
                       <td>{item.prix_kg} FCFA/kg</td>
                     </tr>
                   ))}

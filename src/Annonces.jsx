@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase";
+import { datePrixAffichee } from "./prixUtils";
 import { normaliserNumeroSenegal } from "./telephone";
 
 const bucketPhotos = "annonce-photos";
@@ -31,7 +32,10 @@ const badgePrix = (annonce, prixMarche) => {
   const reference = prixMarche.find(
     (prix) =>
       normaliser(prix.produit) === produit &&
-      normaliser(prix.region) === region
+      normaliser(prix.region) === region &&
+      prix.type_prix === "producteur" &&
+      prix.prix_min_kg == null &&
+      prix.prix_max_kg == null
   );
   const prixReference = Number(reference?.prix_kg);
   const prixAnnonce = Number(annonce.prix_kg);
@@ -51,6 +55,10 @@ const badgePrix = (annonce, prixMarche) => {
       label: "🟠 Un peu cher",
       classe: "price-badge--high",
       reference: prixReference,
+      date: reference.date,
+      date_precision: reference.date_precision,
+      source: reference.source,
+      source_url: reference.source_url,
     };
   }
   if (ecart < -0.1) {
@@ -58,17 +66,27 @@ const badgePrix = (annonce, prixMarche) => {
       label: "🔵 Bon prix pour l’acheteur",
       classe: "price-badge--low",
       reference: prixReference,
+      date: reference.date,
+      date_precision: reference.date_precision,
+      source: reference.source,
+      source_url: reference.source_url,
     };
   }
   return {
     label: "🟢 Prix juste",
     classe: "price-badge--fair",
     reference: prixReference,
+    date: reference.date,
+    date_precision: reference.date_precision,
+    source: reference.source,
+    source_url: reference.source_url,
   };
 };
 
 export default function Annonces({ user, role }) {
   const [liste, setListe] = useState([]);
+  const [erreurAnnonces, setErreurAnnonces] = useState("");
+  const [annonceEnCours, setAnnonceEnCours] = useState(null);
   const [filtre, setFiltre] = useState("");
   const [regionFiltre, setRegionFiltre] = useState("");
   const [prixMaximum, setPrixMaximum] = useState("");
@@ -88,20 +106,34 @@ export default function Annonces({ user, role }) {
   const [erreurEvaluation, setErreurEvaluation] = useState("");
 
   const charger = async () => {
-    const { data } = await supabase
-      .from("annonces").select("*").order("created_at", { ascending: false });
+    const { data, error } = await supabase
+      .from("annonces")
+      .select("*")
+      .eq("statut", "disponible")
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.error("Impossible de charger les annonces:", error);
+      setErreurAnnonces("Impossible de charger les annonces disponibles.");
+      return;
+    }
+    setErreurAnnonces("");
     setListe(data || []);
   };
   useEffect(() => {
     supabase
       .from("annonces")
       .select("*")
+      .eq("statut", "disponible")
+      .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {
         if (error) {
           console.error("Impossible de charger les annonces:", error);
+          setErreurAnnonces("Impossible de charger les annonces disponibles.");
           return;
         }
+        setErreurAnnonces("");
         setListe(data || []);
       });
   }, []);
@@ -113,7 +145,7 @@ export default function Annonces({ user, role }) {
       try {
         const { data, error } = await supabase
           .from("prix_marche")
-          .select("produit,region,prix_kg,date")
+          .select("produit,region,prix_kg,date,date_precision,type_prix,source,source_url,prix_min_kg,prix_max_kg")
           .order("date", { ascending: false });
 
         if (error) throw error;
@@ -220,6 +252,28 @@ export default function Annonces({ user, role }) {
     if (erreurPhoto) {
       alert("L'annonce a été supprimée, mais sa photo n'a pas pu être supprimée.");
     }
+  };
+
+  const marquerVendue = async (annonce) => {
+    if (!user || user.id !== annonce.user_id) return;
+
+    setAnnonceEnCours(annonce.id);
+    const { error } = await supabase
+      .from("annonces")
+      .update({ statut: "vendu" })
+      .eq("id", annonce.id)
+      .eq("user_id", user.id)
+      .select("id")
+      .single();
+    if (error) {
+      console.error("Impossible de marquer l'annonce comme vendue:", error);
+      alert(error.message);
+      setAnnonceEnCours(null);
+      return;
+    }
+
+    setListe((annonces) => annonces.filter((item) => item.id !== annonce.id));
+    setAnnonceEnCours(null);
   };
 
   const enregistrerContact = (annonce) => {
@@ -402,6 +456,9 @@ export default function Annonces({ user, role }) {
         role === "agriculteur" ? (
           <div className="card">
             <h2>Publier une annonce</h2>
+            <p className="annonce-expiration">
+              Les annonces restent visibles pendant 30 jours. Vous pourrez les renouveler depuis votre tableau de bord.
+            </p>
             {Object.keys(vide).map((k) => (
               <input key={k} placeholder={libelles[k]} value={f[k]}
                 onChange={(e) => modifierChamp(k, e.target.value)} />
@@ -470,6 +527,7 @@ export default function Annonces({ user, role }) {
         </select>
       </div>
       {erreurPrix && <p role="status">{erreurPrix}</p>}
+      {erreurAnnonces && <p role="alert">{erreurAnnonces}</p>}
       <div className="grid">
         {visibles.length === 0 ? (
           <p>Aucune annonce ne correspond à ces filtres.</p>
@@ -493,10 +551,18 @@ export default function Annonces({ user, role }) {
               <p>{a.quantite_kg} kg à {a.prix_kg} FCFA/kg</p>
               {badge && (
                 <p className={`price-badge ${badge.classe}`}>
-                  {badge.label} · référence : {badge.reference} FCFA/kg
+                  {badge.label} · référence producteur : {badge.reference} FCFA/kg
+                  {" · "}{datePrixAffichee(badge)}
+                  {badge.source && <> · {badge.source}</>}
+                  {badge.source_url && /^https?:\/\//i.test(badge.source_url) && (
+                    <> · <a href={badge.source_url} target="_blank" rel="noreferrer">source</a></>
+                  )}
                 </p>
               )}
               <p>📍 {a.region}</p>
+              <p className="annonce-expiration">
+                Disponible jusqu'au {new Date(a.expires_at).toLocaleDateString("fr-FR")}
+              </p>
               {resume ? (
                 <p className="seller-rating" aria-label={`Note moyenne ${resume.moyenne} sur 5`}>
                   ⭐ {resume.moyenne}/5 · {resume.nombre} avis
@@ -566,7 +632,16 @@ export default function Annonces({ user, role }) {
                 </div>
               )}
               {role === "agriculteur" && user?.id === a.user_id && (
-                <button onClick={() => supprimer(a)}>Supprimer</button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => marquerVendue(a)}
+                    disabled={annonceEnCours === a.id}
+                  >
+                    {annonceEnCours === a.id ? "Mise à jour..." : "Marquer comme vendu"}
+                  </button>
+                  <button type="button" onClick={() => supprimer(a)}>Supprimer</button>
+                </>
               )}
             </div>
           );

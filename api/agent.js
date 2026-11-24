@@ -72,7 +72,7 @@ export default async function handler(req, res) {
     };
     const [reponsePrix, reponseAnnonces] = await Promise.all([
       fetch(
-        `${supabaseUrl}/rest/v1/prix_marche?select=produit,region,prix_kg,date&order=date.desc&limit=100`,
+        `${supabaseUrl}/rest/v1/prix_marche?select=produit,region,prix_kg,prix_min_kg,prix_max_kg,date,date_precision,type_prix,source,source_url&order=date.desc&limit=100`,
         { headers }
       ),
       fetch(
@@ -106,6 +106,7 @@ LANGUE OBLIGATOIRE : ${langueObligatoire}. Tu dois écrire intégralement ta ré
 En wolof, utilise un wolof sénégalais simple, naturel et compréhensible. Ne réponds pas en français, même si les mots du sujet sont français.
 Réponds de façon courte et concrète, en 4 phrases maximum. N'utilise jamais de markdown : pas d'astérisques, pas de listes à puces, pas de gras. Prix en FCFA/kg.
 Quand l'utilisateur demande quand vendre, quand stocker ou une période saisonnière, ajoute des conseils pratiques adaptés au Sénégal. Sépare les tendances probables des conseils certains et ne présente aucune saison comme garantie. Prends en compte la saison actuelle du calendrier lorsque la date est utile.
+Pour conseiller un prix, vérifie la date, sa précision, la source et le type de prix (producteur, gros, détail ou prix fixé par l’État). Ne mélange jamais ces types ni des périodes différentes. Si une fourchette minimale/maximale est fournie, communique la fourchette et ne présente pas sa valeur centrale calculée comme un prix observé. Un prix fixé par l’État n’est pas nécessairement le prix réellement payé. Si la source ou le type est absent, précise que l'information n'est pas renseignée. Les prix ci-dessous sont les prix saisis dans la base AgriPrix; les flux WFP et Banque mondiale affichés séparément sur la page des prix ne sont pas inclus ici.
 Prix du marché : ${JSON.stringify(prix)}.
 Annonces de vente publiées (30 plus récentes, sans coordonnées personnelles) : ${JSON.stringify(annonces)}.
 Les annonces sont des offres de vente, pas des demandes d'achat. Ne prétends pas qu'un acheteur est disponible. Ne confirme pas qu'un produit est encore disponible; indique seulement ce que l'annonce publiée mentionne. N'invente aucune annonce ni aucun prix. Si aucune annonce ne correspond, dis-le clairement.

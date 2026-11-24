@@ -1,3 +1,12 @@
+UPDATE public.prix_marche
+SET
+  source = 'ANSD, moyenne régionale IHPC de septembre 2026',
+  source_url = 'https://www.ansd.sn/sites/default/files/2026-10/IHPC_base2023_Sept%2026_VF_Rev.pdf'
+WHERE produit = 'Oignon local'
+  AND date = DATE '2026-09-01'
+  AND region IN ('Dakar', 'Thiès', 'Diourbel', 'Saint-Louis', 'Kolda')
+  AND source_url = 'https://www.dakaractu.com/Produits-essentiels-sur-les-marches-A-Dakar-le-kilo-d-oignon-local-passe-de-520-a-674-FCFA_a277955.html';
+
 WITH prix_a_ajouter (
   produit,
   region,
@@ -44,8 +53,8 @@ WITH prix_a_ajouter (
       DATE '2026-09-01',
       'mois',
       'detail',
-      'Note ANSD de septembre 2026, rapportée par Dakaractu le 8 novembre 2026',
-      'https://www.dakaractu.com/Produits-essentiels-sur-les-marches-A-Dakar-le-kilo-d-oignon-local-passe-de-520-a-674-FCFA_a277955.html'
+      'ANSD, moyenne régionale IHPC de septembre 2026',
+      'https://www.ansd.sn/sites/default/files/2026-10/IHPC_base2023_Sept%2026_VF_Rev.pdf'
     ),
     (
       'Oignon local',
@@ -56,8 +65,8 @@ WITH prix_a_ajouter (
       DATE '2026-09-01',
       'mois',
       'detail',
-      'Note ANSD de septembre 2026, rapportée par Dakaractu le 8 novembre 2026',
-      'https://www.dakaractu.com/Produits-essentiels-sur-les-marches-A-Dakar-le-kilo-d-oignon-local-passe-de-520-a-674-FCFA_a277955.html'
+      'ANSD, moyenne régionale IHPC de septembre 2026',
+      'https://www.ansd.sn/sites/default/files/2026-10/IHPC_base2023_Sept%2026_VF_Rev.pdf'
     ),
     (
       'Oignon local',
@@ -68,8 +77,8 @@ WITH prix_a_ajouter (
       DATE '2026-09-01',
       'mois',
       'detail',
-      'Note ANSD de septembre 2026, rapportée par Dakaractu le 8 novembre 2026',
-      'https://www.dakaractu.com/Produits-essentiels-sur-les-marches-A-Dakar-le-kilo-d-oignon-local-passe-de-520-a-674-FCFA_a277955.html'
+      'ANSD, moyenne régionale IHPC de septembre 2026',
+      'https://www.ansd.sn/sites/default/files/2026-10/IHPC_base2023_Sept%2026_VF_Rev.pdf'
     ),
     (
       'Oignon local',
@@ -80,8 +89,8 @@ WITH prix_a_ajouter (
       DATE '2026-09-01',
       'mois',
       'detail',
-      'Note ANSD de septembre 2026, rapportée par Dakaractu le 8 novembre 2026',
-      'https://www.dakaractu.com/Produits-essentiels-sur-les-marches-A-Dakar-le-kilo-d-oignon-local-passe-de-520-a-674-FCFA_a277955.html'
+      'ANSD, moyenne régionale IHPC de septembre 2026',
+      'https://www.ansd.sn/sites/default/files/2026-10/IHPC_base2023_Sept%2026_VF_Rev.pdf'
     ),
     (
       'Oignon local',
@@ -92,8 +101,20 @@ WITH prix_a_ajouter (
       DATE '2026-09-01',
       'mois',
       'detail',
-      'Note ANSD de septembre 2026, rapportée par Dakaractu le 8 novembre 2026',
-      'https://www.dakaractu.com/Produits-essentiels-sur-les-marches-A-Dakar-le-kilo-d-oignon-local-passe-de-520-a-674-FCFA_a277955.html'
+      'ANSD, moyenne régionale IHPC de septembre 2026',
+      'https://www.ansd.sn/sites/default/files/2026-10/IHPC_base2023_Sept%2026_VF_Rev.pdf'
+    ),
+    (
+      'Oignon local',
+      'Kaolack',
+      665,
+      NULL,
+      NULL,
+      DATE '2026-09-01',
+      'mois',
+      'detail',
+      'ANSD, moyenne régionale IHPC de septembre 2026',
+      'https://www.ansd.sn/sites/default/files/2026-10/IHPC_base2023_Sept%2026_VF_Rev.pdf'
     ),
     (
       'Arachide',

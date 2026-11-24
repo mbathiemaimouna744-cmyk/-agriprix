@@ -1,16 +1,57 @@
 # AgriPrix
 
-## Développement local
+## Démarrage local en moins de 5 minutes
 
-Installez les dépendances puis lancez l'application avec l'API :
+Prérequis : Node.js `^20.19.0` ou `>=22.12.0`, npm, et les clés d'un projet
+Supabase et d'une clé Gemini.
+
+1. Installez les dépendances avec `npm install`.
+2. Copiez `.env.example` vers `.env`, puis remplacez les valeurs fictives.
+3. Lancez l'application avec ses fonctions API :
 
 ```sh
-npm install
 npm run dev:vercel
 ```
 
-`npm run dev` lance uniquement Vite; la fonction `/api/agent` n'y est pas disponible.
-Vercel CLI peut demander une connexion et l'association à un projet.
+Vercel CLI peut demander une connexion et l'association à un projet. `npm run dev`
+lance uniquement Vite; les fonctions API `/api/*` n'y sont pas disponibles.
+Ne publiez jamais le fichier `.env` ni la clé Gemini; `.env` est ignoré par Git.
+Redémarrez le serveur après toute modification de `.env`.
+
+## Dépôt et application en ligne
+
+- Application : https://agriprix.vercel.app
+- Dépôt GitHub : https://github.com/mbathiemaimouna744-cmyk/-agriprix
+
+Le dépôt est privé : accordez l'accès au professeur avant la remise. Au contrôle
+du 24 novembre 2026, seule la branche `main` était présente; créez et alimentez
+les branches `develop` et `feature` demandées par le cahier de remise.
+Le site public répond, mais vérifiez que le dernier code est bien déployé :
+la réponse publique de `/api/prix-wfp` n'incluait pas encore `type_prix`, champ
+présent dans le code source actuel.
+
+## Tests
+
+Lancez les tests unitaires et d'intégration avec `npm test`. Pour générer le
+rapport de couverture, utilisez `npm run test:coverage`.
+Le rapport impose au moins 60 % de couverture des instructions, des fonctions
+et des lignes.
+
+## Contrat d'API
+
+Le contrat OpenAPI est dans [openapi.yaml](./openapi.yaml). Importez ce fichier
+dans Postman ou Swagger Editor pour consulter les trois fonctions serveur :
+`POST /api/agent`, `GET /api/prix-wfp` et
+`GET /api/prix-banque-mondiale`. Les données WFP et Banque mondiale sont
+historiques ou périodiques, pas des prix en temps réel.
+
+## Comptes de démonstration
+
+Créez des comptes dédiés aux essais pour les rôles acheteur et agriculteur.
+L'administrateur doit être un compte de confiance dont le rôle `admin` est
+attribué dans `public.profiles` après exécution des scripts SQL nécessaires.
+Les mots de passe de démonstration ne sont pas stockés dans ce dépôt; transmettez
+les identifiants au professeur par un canal privé.
 
 ## Variables d'environnement
 
@@ -56,6 +97,16 @@ SQL du projet Supabase. Les comptes existants seront définis comme agriculteurs
 les nouveaux comptes choisiront leur rôle à l'inscription. Seuls les
 agriculteurs peuvent publier ou supprimer leurs annonces.
 
+## Statut et expiration des annonces
+
+Après `roles.sql`, exécutez
+[supabase/annonces_disponibilite.sql](./supabase/annonces_disponibilite.sql)
+dans l'éditeur SQL Supabase. Les annonces restent visibles pendant 30 jours,
+puis sont masquées aux autres visiteurs sans être supprimées. Les agriculteurs
+peuvent les marquer comme vendues ou les remettre en vente pour 30 jours depuis
+leur tableau de bord. Le vendeur et l'administration peuvent toujours consulter
+les annonces vendues ou expirées.
+
 ## Comparaison visuelle des prix
 
 L'onglet « Prix du marché » affiche des barres comparant les prix actuels par
@@ -63,6 +114,23 @@ produit et région. Une évolution historique nécessite d'enregistrer plusieurs
 dates de relevés pour chaque produit et région.
 
 ## Source externe des prix
+
+Avant d'ajouter un prix dans l'administration, renseignez son type
+(producteur, gros, détail ou prix fixé par l'État) et sa source. Les fourchettes
+peuvent être enregistrées avec leurs bornes; leur valeur centrale est calculée
+pour les comparaisons et n'est pas présentée comme une observation exacte. La
+précision de date (jour ou mois) est conservée. Les anciens prix conservent
+leurs champs vides jusqu'à vérification ; ils ne sont pas supprimés par la migration.
+Pour activer ces colonnes, exécutez [supabase/prix_sources.sql](./supabase/prix_sources.sql)
+dans l'éditeur SQL Supabase avant d'utiliser le formulaire d'administration. Les
+prix documentés de 2026 peuvent ensuite être ajoutés sans doublons avec
+[supabase/prix_donnees_2026.sql](./supabase/prix_donnees_2026.sql). L'oignon local
+de Sédhiou et la pomme de terre de Sédhiou sont des fourchettes de détail de l'APS.
+Les six valeurs d'oignon de septembre (Dakar, Diourbel, Kaolack, Kolda, Saint-Louis
+et Thiès) sont des moyennes régionales de l'IHPC de l'ANSD, liées directement à la
+note officielle. Le prix d'arachide est un prix plancher fixé par l'État, pas une
+preuve du prix effectivement payé. Le prix de riz contesté n'est pas inséré. Les
+anciens prix d'exemple ne sont pas supprimés.
 
 L'API `/api/prix-wfp` récupère les dernières observations disponibles du jeu
 [WFP Food Prices for Senegal sur HDX](https://data.humdata.org/dataset/wfp-food-prices-for-senegal).
