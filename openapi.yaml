@@ -5,7 +5,8 @@ info:
   description: >
     Contrat des fonctions serveur AgriPrix. Les prix WFP et Banque mondiale
     sont des données de consultation; l'assistant accepte une question et un
-    historique optionnel. Les valeurs ne constituent pas une garantie de prix.
+    historique optionnel. L'API ML est hébergée séparément sur Render. Les
+    valeurs ne constituent pas une garantie de prix.
     Les endpoints publics ont répondu lors de la vérification du 24 novembre
     2026; synchroniser le déploiement avec la version finale du dépôt avant
     remise.
@@ -17,6 +18,7 @@ servers:
 tags:
   - name: Assistant
   - name: Prix
+  - name: Prévision ML
 paths:
   /api/agent:
     post:
@@ -191,6 +193,128 @@ paths:
               schema:
                 $ref: '#/components/schemas/ExternalApiError'
 
+  /health:
+    servers:
+      - url: https://agriprix-ml-api.onrender.com
+        description: API Flask de prévision sur Render
+      - url: http://localhost:5000
+        description: API Flask locale
+    get:
+      tags: [Prévision ML]
+      operationId: verifierApiMl
+      summary: Vérifier l'état du modèle entraîné
+      responses:
+        '200':
+          description: Modèle chargé et prêt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MlHealthResponse'
+        '503':
+          description: Modèle absent ou non encore entraîné
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalApiError'
+
+  /:
+    servers:
+      - url: https://agriprix-ml-api.onrender.com
+      - url: http://localhost:5000
+    get:
+      tags: [Prévision ML]
+      operationId: verifierServiceMl
+      summary: Vérifier que le service Flask répond
+      responses:
+        '200':
+          description: Service Flask en fonctionnement
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MlRootResponse'
+
+  /options:
+    servers:
+      - url: https://agriprix-ml-api.onrender.com
+      - url: http://localhost:5000
+    get:
+      tags: [Prévision ML]
+      operationId: obtenirMarchesPrevision
+      summary: Lister les séries récentes disponibles pour le modèle
+      responses:
+        '200':
+          description: Marchés disposant d'au moins six observations récentes
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [options]
+                properties:
+                  options:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MlMarketOption'
+        '503':
+          description: Modèle absent ou non encore entraîné
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalApiError'
+
+  /predict:
+    servers:
+      - url: https://agriprix-ml-api.onrender.com
+      - url: http://localhost:5000
+    post:
+      tags: [Prévision ML]
+      operationId: predirePrixMarche
+      summary: Estimer le prix du mois suivant pour un marché
+      description: >
+        Prévision expérimentale d'un prix de détail WFP en XOF/kg. Le résultat
+        est accompagné d'une validation chronologique comparée au dernier prix
+        connu; il ne constitue pas un prix garanti ou un prix producteur.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MlPredictionRequest'
+            example:
+              produit: Maize (local)
+              region: Dakar
+              marche: Sandaga
+      responses:
+        '200':
+          description: Prévision et métriques de validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MlPredictionResponse'
+        '400':
+          description: JSON invalide ou champs obligatoires absents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalApiError'
+        '404':
+          description: Série de marché non disponible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalApiError'
+        '422':
+          description: Dernier relevé trop ancien pour une prévision
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalApiError'
+        '503':
+          description: Modèle absent ou non encore entraîné
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalApiError'
+
 components:
   schemas:
     AgentRequest:
@@ -277,7 +401,7 @@ components:
         type_prix:
           type: string
           enum: [detail]
-          description: Peut être absent sur la version publique antérieure au déploiement du code courant.
+          description: Type de prix du relevé WFP.
         devise:
           type: string
           enum: [XOF]
@@ -336,3 +460,112 @@ components:
         devise:
           type: string
           enum: [XOF]
+    MlMarketOption:
+      type: object
+      required: [produit, produit_libelle, region, region_libelle, marche, dernier_releve, observations]
+      properties:
+        produit:
+          type: string
+          description: Nom d'origine WFP utilisé dans la requête.
+        produit_libelle:
+          type: string
+          description: Libellé français à afficher.
+        region:
+          type: string
+        region_libelle:
+          type: string
+        marche:
+          type: string
+        dernier_releve:
+          type: string
+          format: date
+        observations:
+          type: integer
+          minimum: 6
+    MlPredictionRequest:
+      type: object
+      required: [produit, region, marche]
+      properties:
+        produit:
+          type: string
+        region:
+          type: string
+        marche:
+          type: string
+    MlPredictionResponse:
+      type: object
+      required: [prevision, evaluation, source, source_url, avertissement]
+      properties:
+        prevision:
+          type: object
+          required: [produit, region, marche, mois, prix_fcfa_kg, prix_reference_fcfa_kg, dernier_releve, observations]
+          properties:
+            produit:
+              type: string
+            region:
+              type: string
+            marche:
+              type: string
+            mois:
+              type: string
+              pattern: '^\d{4}-\d{2}$'
+            prix_fcfa_kg:
+              type: number
+              exclusiveMinimum: 0
+            prix_reference_fcfa_kg:
+              type: number
+              exclusiveMinimum: 0
+            dernier_releve:
+              type: string
+              format: date
+            observations:
+              type: integer
+        evaluation:
+          type: object
+          required: [debut_validation, fin_validation, observations_validation, mae_fcfa_kg, mae_baseline_fcfa_kg, rmse_fcfa_kg, meilleur_que_baseline]
+          properties:
+            debut_validation:
+              type: string
+            fin_validation:
+              type: string
+            observations_validation:
+              type: integer
+            mae_fcfa_kg:
+              type: number
+            mae_baseline_fcfa_kg:
+              type: number
+            rmse_fcfa_kg:
+              type: number
+            meilleur_que_baseline:
+              type: boolean
+        source:
+          type: string
+        source_url:
+          type: string
+          format: uri
+        avertissement:
+          type: string
+    MlHealthResponse:
+      type: object
+      required: [status, modele_charge, date_donnees, validation]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        modele_charge:
+          type: boolean
+        date_donnees:
+          type: string
+          format: date
+        validation:
+          type: object
+    MlRootResponse:
+      type: object
+      required: [service, endpoints]
+      properties:
+        service:
+          type: string
+        endpoints:
+          type: array
+          items:
+            type: string

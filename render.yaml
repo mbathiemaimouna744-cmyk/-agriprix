@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: agriprix-ml-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r ml_api/requirements.txt && python ml/train.py
+    startCommand: waitress-serve --host=0.0.0.0 --port=$PORT ml_api.app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
+      - key: ML_API_ALLOWED_ORIGINS
+        value: https://agriprix.vercel.app,http://localhost:5173

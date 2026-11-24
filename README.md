@@ -26,9 +26,10 @@ Redémarrez le serveur après toute modification de `.env`.
 Le dépôt est privé : accordez l'accès au professeur avant la remise. Au contrôle
 du 24 novembre 2026, seule la branche `main` était présente; créez et alimentez
 les branches `develop` et `feature` demandées par le cahier de remise.
-Le site public répond, mais vérifiez que le dernier code est bien déployé :
-la réponse publique de `/api/prix-wfp` n'incluait pas encore `type_prix`, champ
-présent dans le code source actuel.
+Le frontend est déployé sur Vercel. L'API Flask de prévision est un service
+séparé à déployer sur Render avec `render.yaml`; après son déploiement, configurez
+`VITE_ML_API_URL` dans les variables d'environnement de Vercel puis redéployez
+le frontend. L'URL Render exacte est affichée dans le tableau de bord Render.
 
 ## Tests
 
@@ -40,9 +41,10 @@ et des lignes.
 ## Contrat d'API
 
 Le contrat OpenAPI est dans [openapi.yaml](./openapi.yaml). Importez ce fichier
-dans Postman ou Swagger Editor pour consulter les trois fonctions serveur :
+dans Postman ou Swagger Editor pour consulter les fonctions serveur Vercel :
 `POST /api/agent`, `GET /api/prix-wfp` et
-`GET /api/prix-banque-mondiale`. Les données WFP et Banque mondiale sont
+`GET /api/prix-banque-mondiale`, ainsi que les routes Flask de prévision
+hébergées séparément sur Render. Les données WFP et Banque mondiale sont
 historiques ou périodiques, pas des prix en temps réel.
 
 ## Comptes de démonstration
@@ -64,10 +66,51 @@ SUPABASE_URL=
 SUPABASE_ANON_KEY=
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-3.5-flash-lite
+VITE_ML_API_URL=https://agriprix-ml-api.onrender.com
 ```
 
 Ne partagez pas la clé Gemini et ne la publiez pas. `.env` est ignoré par Git.
 Redémarrez le serveur après avoir modifié ce fichier.
+
+## API Flask et modèle expérimental
+
+Le fichier [data/prix_releves.csv](./data/prix_releves.csv) provient du jeu
+[WFP Food Prices for Senegal sur HDX](https://data.humdata.org/dataset/wfp-food-prices-for-senegal)
+(licence CC BY-IGO; attribution et filtre décrits dans [data/README.md](./data/README.md)).
+Cette copie contient 55 959 observations source; 55 680 satisfont le filtre
+XOF/kg, détail, prix positif et date valide.
+Le modèle utilise les observations de détail WFP en XOF/kg, agrégées par mois,
+produit, région et marché. Il prédit le mois suivant le dernier relevé disponible
+pour ce marché. Ce n'est pas un prix en temps réel, un prix producteur ou une
+garantie commerciale.
+
+Pour entraîner le modèle et démarrer Flask localement avec Python 3.12 :
+
+```powershell
+py -3.12 -m pip install -r ml_api/requirements.txt
+py -3.12 ml/train.py
+$env:VITE_ML_API_URL = "http://127.0.0.1:5000"
+py -3.12 -m flask --app ml_api.app run --port 5000
+```
+
+Dans un second terminal, lancez Vite avec `npm run dev`. Les métriques
+chronologiques du modèle et du baseline « dernier prix connu » sont produites
+par `ml/train.py` dans `ml/metadata.json`; l'interface les affiche avec chaque
+prévision. Si le modèle ne fait pas mieux que le baseline, l'interface le signale.
+Sur le jeu téléchargé, le test chronologique (juillet 2021 à octobre 2026,
+19 153 prédictions) donne une erreur absolue moyenne de 40,84 FCFA/kg pour le
+modèle contre 35,83 FCFA/kg pour le dernier prix connu. Le modèle actuel ne
+dépasse donc pas cette baseline et ne doit pas être présenté comme précis ou
+fiable sans amélioration et nouvelle évaluation.
+
+Les tests Python du modèle et des routes Flask se lancent avec
+`py -3.12 -m unittest ml.test_train ml_api.test_app`.
+
+Pour mettre l'API en ligne, connectez le dépôt GitHub à Render en choisissant le
+Blueprint défini dans `render.yaml`. Le build installe les dépendances et
+réentraîne le modèle; les routes sont `GET /`, `GET /health`, `GET /options` et
+`POST /predict`. L'API est publique et ne reçoit aucune clé Gemini. Le code
+Gemini existant n'est pas modifié.
 
 ## Accès aux prix du marché
 

@@ -1,0 +1,25 @@
+{
+  "source": "WFP Food Prices for Senegal, diffusé par HDX",
+  "source_url": "https://data.humdata.org/dataset/wfp-food-prices-for-senegal",
+  "source_data_url": "https://data.humdata.org/dataset/77b76bc7-1edd-43f6-a5e4-784498ff6aca/resource/04ffc070-6d05-4653-a9f6-9f3f893a229e/download/wfp_food_prices_sen.csv",
+  "licence": "CC BY-IGO",
+  "premiere_date_donnees": "2000-01-15",
+  "date_donnees": "2026-10-15",
+  "lignes_source": 55959,
+  "observations_xof_kg_retail": 55680,
+  "observations_mensuelles": 55680,
+  "exemples_entrainement": 48230,
+  "produits": 27,
+  "regions": 14,
+  "marches": 67,
+  "validation": {
+    "debut_validation": "2021-07",
+    "fin_validation": "2026-10",
+    "observations_validation": 19153,
+    "mae_fcfa_kg": 40.84,
+    "mae_baseline_fcfa_kg": 35.83,
+    "rmse_fcfa_kg": 79.05,
+    "meilleur_que_baseline": false
+  },
+  "methodologie": "Prévision d'un mois à l'avance sur des prix mensuels médians XOF/kg; validation chronologique comparée au dernier prix connu."
+}
