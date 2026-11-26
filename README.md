@@ -18,19 +18,21 @@ lance uniquement Vite; les fonctions API `/api/*` n'y sont pas disponibles.
 Ne publiez jamais le fichier `.env` ni la clé Gemini; `.env` est ignoré par Git.
 Redémarrez le serveur après toute modification de `.env`.
 
-## Dépôt et application en ligne
+## ## Dépôt GitHub et application en ligne
 
-- Application : https://agriprix.vercel.app
-- Dépôt GitHub : https://github.com/mbathiemaimouna744-cmyk/-agriprix
+- **Application :** https://agriprix.vercel.app
+- **Dépôt GitHub :** https://github.com/mbathiemaimouna744-cmyk/-agriprix
 
-Le dépôt est privé : accordez l'accès au professeur avant la remise. Au contrôle
-du 24 novembre 2026, seule la branche `main` était présente; créez et alimentez
-les branches `develop` et `feature` demandées par le cahier de remise.
-Le frontend est déployé sur Vercel. L'API Flask de prévision est un service
-séparé à déployer sur Render avec `render.yaml`; après son déploiement, configurez
-`VITE_ML_API_URL` dans les variables d'environnement de Vercel puis redéployez
-le frontend. L'URL Render exacte est affichée dans le tableau de bord Render.
+Le dépôt GitHub est public et accessible pour la consultation du code source.
 
+Le projet utilise trois branches :
+- `main` : version principale du projet.
+- `develop` : branche de développement et d'intégration.
+- `feature` : branche dédiée au développement des fonctionnalités.
+
+Le frontend est déployé sur Vercel.
+
+L'API Flask de prévision constitue un service indépendant, déployé séparément sur Render à partir du fichier `render.yaml`. Après son déploiement, la variable `VITE_ML_API_URL` doit être configurée dans les variables d'environnement de Vercel, puis le frontend doit être redéployé.
 ## Tests
 
 Lancez les tests unitaires et d'intégration avec `npm test`. Pour générer le
@@ -49,11 +51,19 @@ historiques ou périodiques, pas des prix en temps réel.
 
 ## Comptes de démonstration
 
-Créez des comptes dédiés aux essais pour les rôles acheteur et agriculteur.
-L'administrateur doit être un compte de confiance dont le rôle `admin` est
-attribué dans `public.profiles` après exécution des scripts SQL nécessaires.
-Les mots de passe de démonstration ne sont pas stockés dans ce dépôt; transmettez
-les identifiants au professeur par un canal privé.
+L'application propose trois rôles principaux :
+
+Acheteur : consultation des annonces, publication de demandes d'achat et évaluation des vendeurs.
+
+Agriculteur : publication et gestion des annonces, consultation des demandes d'achat.
+
+Administrateur : gestion des annonces signalées, modération et gestion des prix du marché.
+
+Des comptes dédiés à la démonstration doivent être utilisés pour tester ces différents rôles.
+
+Les identifiants et mots de passe des comptes de démonstration sont communiqués séparément à l'encadreur afin d'éviter leur exposition publique dans le dépôt GitHub.
+
+Le rôle administrateur est attribué dans la table public.profiles du projet Supabase. Les mots de passe sont gérés par le système d'authentification Supabase.
 
 ## Variables d'environnement
 
