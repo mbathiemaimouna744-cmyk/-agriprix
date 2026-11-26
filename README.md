@@ -51,19 +51,19 @@ historiques ou périodiques, pas des prix en temps réel.
 
 ## Comptes de démonstration
 
-L'application propose trois rôles principaux :
+L'application propose trois comptes permettant de tester les différents rôles :
 
-Acheteur : consultation des annonces, publication de demandes d'achat et évaluation des vendeurs.
+| Rôle | Adresse e-mail |
+|---|---|
+| Acheteur | aida@gmail.com |
+| Administrateur | mbathiemaimouna744@gmail.com |
+| Agriculteur | pape@gmail.com |
 
-Agriculteur : publication et gestion des annonces, consultation des demandes d'achat.
+Les mots de passe des comptes de démonstration sont transmis séparément à l'encadreur pour des raisons de sécurité.
 
-Administrateur : gestion des annonces signalées, modération et gestion des prix du marché.
+Les comptes utilisent le système d'authentification Supabase.
 
-Des comptes dédiés à la démonstration doivent être utilisés pour tester ces différents rôles.
 
-Les identifiants et mots de passe des comptes de démonstration sont communiqués séparément à l'encadreur afin d'éviter leur exposition publique dans le dépôt GitHub.
-
-Le rôle administrateur est attribué dans la table public.profiles du projet Supabase. Les mots de passe sont gérés par le système d'authentification Supabase.
 
 ## Variables d'environnement
 
